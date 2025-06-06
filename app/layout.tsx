@@ -96,7 +96,7 @@ export const metadata: Metadata = {
       },
     ],
   },
-  manifest: "/site.webmanifest",
+  manifest: "/manifest.json",
 }
 
 export const viewport: Viewport = {
