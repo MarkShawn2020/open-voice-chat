@@ -5,44 +5,57 @@ import { useShallow } from "zustand/react/shallow"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
-import { curMicVolumeAtom, isChattingAtom, useInitMics, useMicsStore } from "../store/voice-chat"
+import { Switch } from "@/components/ui/switch"
+import { isChattingAtom, useInitMics, useMicsStore, useUpdateMicVolume } from "../store/voice-chat"
 
 const CurMicVolume = () => {
-  const { curMicState } = useMicsStore()
-  const [volume] = useAtom(curMicVolumeAtom)
+  const { curMicState, toggleMic } = useMicsStore()
+
+  useUpdateMicVolume()
 
   return (
-    <div className="p-2 border rounded-md">
+    <div className="space-y-3 p-4 border rounded-lg bg-gray-50">
+      <h4 className="text-sm font-semibold text-gray-800">Microphone Control</h4>
+      
       {/* 权限状态 */}
-      <div className="flex items-center space-x-2 text-xs">
-        <div
-          className={`h-2 w-2 rounded-full ${curMicState.isPermissionGranted ? "bg-green-500" : "bg-red-500"
-            }`}
-        ></div>
-        <span className="text-gray-600">
-          {curMicState.isPermissionGranted ? "Permission Granted" : "Permission Denied"}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <div
+            className={`h-3 w-3 rounded-full ${curMicState.isPermissionGranted ? "bg-green-500" : "bg-red-500"}`}
+          ></div>
+          <span className="text-sm text-gray-600">Microphone Permission</span>
+        </div>
+        <span className={`text-xs font-medium ${curMicState.isPermissionGranted ? "text-green-600" : "text-red-600"}`}>
+          {curMicState.isPermissionGranted ? "Granted" : "Denied"}
         </span>
       </div>
 
-      {/* 开关状态 */}
-      <div className="flex items-center space-x-2 text-xs">
-        <div
-          className={`h-2 w-2 rounded-full ${curMicState.isOn ? "bg-green-500" : "bg-gray-400"}`}
-        ></div>
-        <span className="text-gray-600">{curMicState.isOn ? "Active" : "Inactive"}</span>
+      {/* 开关状态 - 可交互 */}
+      <div className="flex items-center justify-between">
+        <Label htmlFor="mic-switch" className="text-sm text-gray-600">Microphone Active</Label>
+        <Switch 
+          id="mic-switch"
+          checked={curMicState.isOn}
+          onCheckedChange={toggleMic}
+          disabled={!curMicState.isPermissionGranted}
+        />
       </div>
 
-      <div className="flex items-center space-x-2 text-xs">
-
-        <span className="w-12 text-gray-600">Volume:</span>
-        <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-gray-200">
-          <div
-            className="h-full bg-gradient-to-r from-green-400 to-red-500 transition-all duration-100"
-            style={{ width: `${Math.min(volume * 100, 100)}%` }}
-          ></div>
+      {/* 音量指示器 */}
+      {curMicState.isPermissionGranted && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-gray-600">Volume Level</span>
+            <span className="text-xs font-mono text-gray-500">{Math.round(curMicState.volume * 100)}%</span>
+          </div>
+          <div className="relative h-2 w-full overflow-hidden rounded-full bg-gray-200">
+            <div 
+              className="h-full bg-gradient-to-r from-green-400 via-yellow-400 to-red-500 transition-all duration-100"
+              style={{ width: `${Math.min(curMicState.volume * 100, 100)}%` }}
+            ></div>
+          </div>
         </div>
-        <span className="w-8 text-xs text-gray-500">{Math.round(volume * 100)}%</span>
-      </div>
+      )}
     </div>
   )
 }
@@ -55,33 +68,35 @@ const Mics = () => {
   console.log({ mics, curMicId })
 
   return (
-    <div className="mx-auto w-full max-w-md flex flex-col gap-2">
-      <h3 className="mb-4 text-center text-lg font-semibold">Select Microphone</h3>
+    <div className="mx-auto w-full max-w-md space-y-4">
+      <h3 className="text-center text-lg font-semibold">Select Microphone</h3>
+
+      <CurMicVolume />
+      
       <div className="space-y-3">
         {mics.map((mic, index) => {
           const isSelected = curMicId === mic.deviceId
           return (
-            <div
-              key={index}
-              className={`flex items-center space-x-3 rounded-lg border p-3 transition-colors ${isSelected ? "border-blue-500 bg-blue-50" : "hover:bg-gray-50"
+            <div key={index} className="space-y-3">
+              <div
+                className={`flex items-center space-x-3 rounded-lg border p-3 transition-colors ${
+                  isSelected ? "border-blue-500 bg-blue-50" : "hover:bg-gray-50"
                 }`}
-            >
-              <Checkbox id={`mic-${index}`} checked={isSelected} onCheckedChange={() => changeMic(mic.deviceId)} />
-              <div className="min-w-0 flex-1">
-                <Label
-                  htmlFor={`mic-${index}`}
-                  className="block cursor-pointer truncate text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  {mic.label || `Microphone ${index + 1}`}
-                </Label>
+              >
+                <Checkbox id={`mic-${index}`} checked={isSelected} onCheckedChange={() => changeMic(mic.deviceId)} />
+                <div className="min-w-0 flex-1">
+                  <Label
+                    htmlFor={`mic-${index}`}
+                    className="block cursor-pointer truncate text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    {mic.label || `Microphone ${index + 1}`}
+                  </Label>
+                </div>
               </div>
             </div>
           )
         })}
       </div>
-
-      <CurMicVolume />
-
     </div>
   )
 }

@@ -98,26 +98,65 @@ export const useInitMics = () => {
 
 
 export const useUpdateMicVolume = () => {
-  const { curMicState,  updateVolume} = useMicsStore()
+  const { curMicState, updateVolume, curMicId } = useMicsStore()
 
   useEffect(() => {
-    if(!curMicState.isOn) return
+    if (!curMicState.isOn || !curMicId) return
 
-    navigator.mediaDevices.getUserMedia({ audio: { deviceId: id } })
-    .then((stream) => {
-    const audio = new AudioContext()
-    const source = audio.createMediaStreamSource(stream)
-    const processor = audio.createScriptProcessor(4096, 1, 1)
-    source.connect(processor)
-    processor.connect(audio.destination)
-    
-    processor.onaudioprocess = (e) => {
-      const input = e.inputBuffer.getChannelData(0)
-      const sum = input.reduce((a, b) => a + Math.abs(b), 0)
-      const volume = Math.min(sum / input.length * 10, 1) // 放大并限制在0-1范围
-      console.log({ volume })
-      updateVolume(volume)
+    let stream: MediaStream | null = null
+    let audioContext: AudioContext | null = null
+    let source: MediaStreamAudioSourceNode | null = null
+    let processor: ScriptProcessorNode | null = null
+
+    navigator.mediaDevices
+      .getUserMedia({ audio: { deviceId: curMicId } })
+      .then((mediaStream) => {
+        stream = mediaStream
+        audioContext = new AudioContext()
+        source = audioContext.createMediaStreamSource(stream)
+        processor = audioContext.createScriptProcessor(4096, 1, 1)
+        
+        source.connect(processor)
+        processor.connect(audioContext.destination)
+
+        processor.onaudioprocess = (e) => {
+          const input = e.inputBuffer.getChannelData(0)
+          const sum = input.reduce((a, b) => a + Math.abs(b), 0)
+          const volume = Math.min((sum / input.length) * 10, 1) // 放大并限制在0-1范围
+          console.log({ volume })
+          updateVolume(volume)
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to get user media:', err)
+      })
+
+    // 清理函数
+    return () => {
+      console.log('Cleaning up audio resources')
+      
+      // 停止音频处理
+      if (processor) {
+        processor.onaudioprocess = null
+        processor.disconnect()
+      }
+      
+      // 断开音频源连接
+      if (source) {
+        source.disconnect()
+      }
+      
+      // 停止媒体流轨道
+      if (stream) {
+        stream.getTracks().forEach(track => {
+          track.stop()
+        })
+      }
+      
+      // 关闭音频上下文
+      if (audioContext && audioContext.state !== 'closed') {
+        audioContext.close()
+      }
     }
-  })
-  }, [curMicState.isOn])
+  }, [curMicState.isOn, curMicId, updateVolume])
 }
