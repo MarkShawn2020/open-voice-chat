@@ -1,27 +1,64 @@
 "use client"
 
 import { useAtom } from "jotai"
+
 import { MicControl } from "@/components/mic"
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button" 
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { VoiceCall } from "@/components/voice-call"
 import {isChattingAtom} from "@/store/global";
 
 const Main = () => {
   const [isChatting, setIsChatting] = useAtom(isChattingAtom)
 
   return (
-    <>
-      <Button onClick={() => setIsChatting(!isChatting)}>{isChatting ? "Stop Chat" : "Start Chat"}</Button>
-      <div>{isChatting ? "Chatting" : "Not Chatting"}</div>
-    </>
+    <Card>
+      <CardHeader>
+        <CardTitle>智能语音助手</CardTitle>
+        <CardDescription>基于豆包AI的实时语音对话系统</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <Button onClick={() => setIsChatting(!isChatting)}>
+          {isChatting ? "停止对话" : "开始对话"}
+        </Button>
+        <div className="text-center text-sm text-gray-600">
+          {isChatting ? "正在对话中..." : "等待开始对话"}
+        </div>
+      </CardContent>
+    </Card>
   )
 }
 
 export default function Web() {
   return (
-    <div className="margin-auto flex flex-col items-center gap-2 p-4">
-      <MicControl />
+    <div className="container mx-auto max-w-4xl p-4">
+      <div className="text-center mb-8">
+        <h1 className="text-3xl font-bold mb-2">Open Voice Chat</h1>
+        <p className="text-gray-600">实时语音对话AI系统</p>
+      </div>
 
-      <Main />
+      <Tabs defaultValue="voice-call" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="voice-call">语音通话</TabsTrigger>
+          <TabsTrigger value="mic-control">麦克风控制</TabsTrigger>
+          <TabsTrigger value="ai-chat">AI对话</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="voice-call" className="mt-6">
+          <VoiceCall />
+        </TabsContent>
+        
+        <TabsContent value="mic-control" className="mt-6">
+          <div className="flex justify-center">
+            <MicControl />
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="ai-chat" className="mt-6">
+          <Main />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
