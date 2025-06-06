@@ -2,6 +2,18 @@
 
 > 本文档记录了在构建语音聊天应用过程中总结的页面布局设计原则和实践经验。
 
+```
+div.min-h-screen                    (最小屏幕高度，可滚动)
+└── div.h-screen.flex.flex-col      (容器，屏幕高度，flex布局)
+    ├── 页面头部.flex-shrink-0      (固定高度，不缩放)
+    │   ├── 标题："Open Voice Chat"
+    │   └── 描述："实时语音对话AI系统"
+    └── Tabs.flex-1.min-h-0         (占据剩余空间)
+        ├── TabsList.flex-shrink-0  (Tab导航，固定高度)
+        └── TabsContent.flex-1.min-h-0  (内容区域，填充剩余)
+            └── VoiceCall.h-full    (填充父容器)
+```
+
 ## 🎯 核心原则
 
 ### 1. 合理的高度管理
