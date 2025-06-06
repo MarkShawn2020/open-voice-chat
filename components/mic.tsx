@@ -3,7 +3,7 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { useInitMics, useMicActions, useMicStore, useUpdateMicVolume } from "@/store/mic"
 
-export const CurMicVolume = () => {
+export const MicControl = () => {
   const { curMicState } = useMicStore()
   const { toggleMic } = useMicActions()
   useUpdateMicVolume()
@@ -12,7 +12,8 @@ export const CurMicVolume = () => {
     <div className="space-y-3 rounded-lg border bg-gray-50 p-4">
       <h4 className="text-sm font-semibold text-gray-800">Microphone Control</h4>
 
-      
+
+
 
       {/* 权限状态 */}
       <div className="flex items-center justify-between">
@@ -69,7 +70,7 @@ export const Mics = () => {
     <div className="mx-auto w-full max-w-md space-y-4">
       <h3 className="text-center text-lg font-semibold">Select Microphone</h3>
 
-      <CurMicVolume />
+      <MicControl />
 
       <div className="space-y-3">
         {mics.map((mic, index) => {
