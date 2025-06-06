@@ -32,31 +32,35 @@ const Main = () => {
 
 export default function Web() {
   return (
-    <div className="container mx-auto max-w-4xl p-4">
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold mb-2">Open Voice Chat</h1>
-        <p className="text-gray-600">实时语音对话AI系统</p>
+    <div className="min-h-screen">
+      <div className="container mx-auto max-w-4xl p-4 h-screen flex flex-col">
+        {/* 页面头部 */}
+        <div className="text-center mb-8 flex-shrink-0">
+          <h1 className="text-3xl font-bold mb-2">Open Voice Chat</h1>
+          <p className="text-gray-600">实时语音对话AI系统</p>
+        </div>
+
+        {/* Tab导航和内容区域 */}
+        <Tabs defaultValue="voice-call" className="w-full flex flex-col flex-1 min-h-0">
+          <TabsList className="grid w-full grid-cols-3 flex-shrink-0">
+            <TabsTrigger value="config">系统配置</TabsTrigger>
+            <TabsTrigger value="voice-call">语音通话</TabsTrigger>
+            <TabsTrigger value="ai-chat">AI对话</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="config" className="mt-6 flex-1 min-h-0">
+            <Config />
+          </TabsContent>
+                  
+          <TabsContent value="voice-call" className="mt-6 flex-1 min-h-0">
+            <VoiceCall />
+          </TabsContent>
+          
+          <TabsContent value="ai-chat" className="mt-6 flex-1 min-h-0">
+            <Main />
+          </TabsContent>
+        </Tabs>
       </div>
-
-      <Tabs defaultValue="voice-call" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="config">系统配置</TabsTrigger>
-          <TabsTrigger value="voice-call">语音通话</TabsTrigger>
-          <TabsTrigger value="ai-chat">AI对话</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="config" className="mt-6">
-          <Config />
-        </TabsContent>
-                
-        <TabsContent value="voice-call" className="mt-6">
-          <VoiceCall />
-        </TabsContent>
-        
-        <TabsContent value="ai-chat" className="mt-6">
-          <Main />
-        </TabsContent>
-      </Tabs>
     </div>
   )
 }

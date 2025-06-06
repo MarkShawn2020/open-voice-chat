@@ -67,7 +67,7 @@ export const ChatHistory: React.FC<{ messages: ChatMessage[] }> = ({ messages })
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="flex-1 p-0">
+      <CardContent className="flex-1 p-0 overflow-hidden">
         <div ref={scrollAreaRef} className="h-full overflow-y-auto bg-gray-50 px-4 pb-4">
           {displayMessages.length === 0 ? (
             <div className="flex h-32 items-center justify-center text-sm text-gray-500">暂无对话记录</div>

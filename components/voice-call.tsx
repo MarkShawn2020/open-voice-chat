@@ -96,7 +96,7 @@ export const VoiceCall: React.FC = () => {
   }
 
   return (
-    <div className="flex h-screen w-full flex-col p-4">
+    <div className="flex h-full w-full flex-col">
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 lg:grid-cols-2">
         {/* 左侧：控制面板 */}
         <div className="space-y-4 overflow-y-auto">
@@ -295,7 +295,7 @@ export const VoiceCall: React.FC = () => {
         </div>
 
         {/* 右侧：聊天记录 */}
-        <div className="min-h-0">
+        <div className="h-full min-h-0">
           <ChatHistory messages={voiceChatState.chatHistory} />
         </div>
       </div>
