@@ -22,11 +22,14 @@ export const MicControl = () => {
               <SelectValue placeholder="Choose a microphone..." />
             </SelectTrigger>
             <SelectContent>
-              {mics.map((mic, index) => (
-                <SelectItem key={mic.deviceId} value={mic.deviceId!}>
-                  {mic.label || `Microphone ${index + 1}`}
-                </SelectItem>
-              ))}
+              {mics.map((mic, index) => {
+                const deviceId = mic.deviceId || `mic-${index}`
+                return (
+                  <SelectItem key={deviceId} value={deviceId}>
+                    {mic.label || `Microphone ${index + 1}`}
+                  </SelectItem>
+                )
+              })}
             </SelectContent>
           </Select>
         </div>
