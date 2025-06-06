@@ -54,6 +54,9 @@
       <recent name="$PROJECT_DIR$/lib" />
     </key>
     <key name="es6.move.members.recent.items">
+      <recent name="$PROJECT_DIR$/components/chat-history.tsx" />
+      <recent name="$PROJECT_DIR$/components/chat-message-item.tsx" />
+      <recent name="$PROJECT_DIR$/components/chat-timestamp.tsx" />
       <recent name="$PROJECT_DIR$/store/global.ts" />
       <recent name="$PROJECT_DIR$/components/mic.tsx" />
     </key>
@@ -87,7 +90,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1749181875953</updated>
-      <workItem from="1749181877479" duration="12734000" />
+      <workItem from="1749181877479" duration="13433000" />
     </task>
     <servers />
   </component>
