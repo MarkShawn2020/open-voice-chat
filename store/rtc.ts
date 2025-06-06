@@ -44,6 +44,7 @@ export const rtcStateAtom =atom<RTCState>({
 export const rtcActionsAtom = atom(null, (get, set, action: RTCAction) => {
   const state = get(rtcStateAtom)
   const config = get(rtcConfigAtom)
+  console.log('RTC操作:', {state, config})
   
   switch (action.type) {
     case 'INITIALIZE_ENGINE':
@@ -60,6 +61,7 @@ export const rtcActionsAtom = atom(null, (get, set, action: RTCAction) => {
           userId: string
           mediaType: MediaType
         }) => {
+          console.log('用户发布流:', e.userId)
           const currentState = get(rtcStateAtom)
           if (!currentState.remoteUsers.includes(e.userId)) {
             set(rtcStateAtom, {
@@ -73,6 +75,7 @@ export const rtcActionsAtom = atom(null, (get, set, action: RTCAction) => {
           userId: string
           mediaType: MediaType
         }) => {
+          console.log('用户取消发布流:', e.userId)
           const currentState = get(rtcStateAtom)
           set(rtcStateAtom, {
             ...currentState,
@@ -90,11 +93,13 @@ export const rtcActionsAtom = atom(null, (get, set, action: RTCAction) => {
         
         set(rtcStateAtom, { ...state, engine, error: null })
       } catch (error) {
+        console.error('初始化引擎失败:', error)
         set(rtcStateAtom, { ...state, error: `初始化引擎失败: ${error}` })
       }
       break
       
     case 'JOIN_ROOM':
+      console.log('加入房间:', config)
       if (!state.engine || !config) {
         set(rtcStateAtom, { ...state, error: '引擎未初始化或配置缺失' })
         return
@@ -118,6 +123,7 @@ export const rtcActionsAtom = atom(null, (get, set, action: RTCAction) => {
       break
       
     case 'START_LOCAL_AUDIO':
+      console.log('启动音频采集')
       if (!state.engine) {
         set(rtcStateAtom, { ...state, error: '引擎未初始化' })
         return
@@ -131,6 +137,7 @@ export const rtcActionsAtom = atom(null, (get, set, action: RTCAction) => {
       break
       
     case 'STOP_LOCAL_AUDIO':
+      console.log('停止音频采集')
       if (!state.engine) return
       
       state.engine.stopAudioCapture()
@@ -138,6 +145,7 @@ export const rtcActionsAtom = atom(null, (get, set, action: RTCAction) => {
       break
       
     case 'LEAVE_ROOM':
+      console.log('离开房间')
       if (!state.engine) return
       
       state.engine.leaveRoom().then(() => {
@@ -155,10 +163,12 @@ export const rtcActionsAtom = atom(null, (get, set, action: RTCAction) => {
       break
       
     case 'SET_ERROR':
+      console.log('设置错误:', action.payload)
       set(rtcStateAtom, { ...state, error: action.payload })
       break
       
     case 'CLEAR_ERROR':
+      console.log('清除错误')
       set(rtcStateAtom, { ...state, error: null })
       break
   }
