@@ -1,5 +1,6 @@
 'use server'
 
+import { Signer } from '@volcengine/openapi'
 import { v4 as uuidv4 } from 'uuid'
 
 // Volcengine API 配置
@@ -32,42 +33,37 @@ interface VoiceChatApiResponse {
 }
 
 /**
- * 生成火山引擎API签名
- * TODO: 实现真实的AWS v4签名算法
+ * 创建 Volcengine API 认证头
  */
-function _generateSignature(
-  _secretKey: string,
-  _region: string,
-  _service: string,
-  _date: string,
-  _signedHeaders: string,
-  _canonicalRequest: string
-): string {
-  // 这里需要实现真实的AWS v4签名算法
-  // 为了演示，返回一个占位符
-  return 'placeholder-signature'
-}
+function createAuthHeaders(action: string, version: string, body: Record<string, unknown>): Record<string, string> {
+  const accessKey = process.env.VOLCENGINE_ACCESS_KEY
+  const secretKey = process.env.VOLCENGINE_SECRET_KEY
 
-/**
- * 创建火山引擎API认证头
- */
-function createAuthHeaders(
-  accessKey: string,
-  secretKey: string,
-  region: string = 'cn-north-1',
-  service: string = 'rtc'
-) {
-  const now = new Date()
-  const dateStamp = now.toISOString().slice(0, 10).replace(/-/g, '')
-  const timeStamp = now.toISOString().slice(0, 19).replace(/[-:]/g, '') + 'Z'
-  
-  // 简化的认证头，实际使用时需要完整的AWS v4签名
-  return {
-    'Authorization': `VOLC-HMAC-SHA256 Credential=${accessKey}/${dateStamp}/${region}/${service}/volc_request`,
-    'X-Date': timeStamp,
-    'Content-Type': 'application/json',
-    'Host': 'rtc.volcengineapi.com'
+  if (!accessKey || !secretKey) {
+    throw new Error('Missing VOLCENGINE_ACCESS_KEY or VOLCENGINE_SECRET_KEY')
   }
+
+  const openApiRequestData = {
+    region: 'cn-north-1',
+    method: 'POST',
+    params: {
+      Action: action,
+      Version: version,
+    },
+    headers: {
+      Host: 'rtc.volcengineapi.com',
+      'Content-type': 'application/json',
+    },
+    body,
+  }
+
+  const signer = new Signer(openApiRequestData, 'rtc')
+  signer.addAuthorization({
+    accessKeyId: accessKey,
+    secretKey: secretKey,
+  })
+
+  return openApiRequestData.headers
 }
 
 /**
@@ -82,8 +78,6 @@ export async function startVoiceChat(config: StartVoiceChatConfig): Promise<{
     // 生成唯一的任务ID
     const taskId = uuidv4()
     
-    console.log('Starting voice chat with config:', { ...config, taskId })
-    
     // 构建请求体
     const requestBody = {
       AppId: config.appId,
@@ -95,7 +89,7 @@ export async function startVoiceChat(config: StartVoiceChatConfig): Promise<{
           ProviderParams: {
             app: {
               appid: process.env.VOLCENGINE_ASR_APP_ID || '94****11',
-              token: process.env.VOLCENGINE_ASR_TOKEN || 'OaO****ws1',
+              token: process.env.VOLCENGINE_ASR_ACCESS_TOKEN || 'OaO****ws1',
               cluster: process.env.VOLCENGINE_ASR_CLUSTER || 'volcano_asr'
             },
             audio: {
@@ -147,28 +141,22 @@ export async function startVoiceChat(config: StartVoiceChatConfig): Promise<{
           SubtitleMode: 0
         },
         InterruptMode: 0, // 开启语音打断
-        AgentConfig: {
-          TargetUserId: [config.targetUserId],
-          WelcomeMessage: config.welcomeMessage || '你好！我是你的AI助手，有什么可以帮助你的吗？',
-          UserId: `voice_agent_${taskId}`,
-          EnableConversationStateCallback: true
-        }
+      },
+      AgentConfig: {
+        TargetUserId: [config.targetUserId],
+        WelcomeMessage: config.welcomeMessage || '你好！我是你的AI助手，有什么可以帮助你的吗？',
+        UserId: `voice_agent_${taskId}`,
+        EnableConversationStateCallback: true
       }
     }
+
+    console.log('Starting voice chat with config:', JSON.stringify({ config, requestBody, taskId }, null, 2))
     
     // 构建API URL
     const url = `${VOLCENGINE_API_BASE}?Action=StartVoiceChat&Version=${API_VERSION}`
     
     // 获取认证信息
-    const accessKey = process.env.VOLCENGINE_ACCESS_KEY
-    const secretKey = process.env.VOLCENGINE_SECRET_KEY
-    
-    if (!accessKey || !secretKey) {
-      throw new Error('火山引擎认证信息未配置')
-    }
-    
-    // 创建认证头
-    const headers = createAuthHeaders(accessKey, secretKey)
+    const headers = createAuthHeaders('StartVoiceChat', API_VERSION, requestBody)
     
     // 发送请求
     const response = await fetch(url, {
@@ -221,15 +209,7 @@ export async function stopVoiceChat(appId: string, taskId: string): Promise<{
     const url = `${VOLCENGINE_API_BASE}?Action=StopVoiceChat&Version=${API_VERSION}`
     
     // 获取认证信息
-    const accessKey = process.env.VOLCENGINE_ACCESS_KEY
-    const secretKey = process.env.VOLCENGINE_SECRET_KEY
-    
-    if (!accessKey || !secretKey) {
-      throw new Error('火山引擎认证信息未配置')
-    }
-    
-    // 创建认证头
-    const headers = createAuthHeaders(accessKey, secretKey)
+    const headers = createAuthHeaders('StopVoiceChat', API_VERSION, requestBody)
     
     // 发送请求
     const response = await fetch(url, {
@@ -282,15 +262,7 @@ export async function getVoiceChatStatus(appId: string, taskId: string): Promise
     const url = `${VOLCENGINE_API_BASE}?Action=GetVoiceChatStatus&Version=${API_VERSION}`
     
     // 获取认证信息
-    const accessKey = process.env.VOLCENGINE_ACCESS_KEY
-    const secretKey = process.env.VOLCENGINE_SECRET_KEY
-    
-    if (!accessKey || !secretKey) {
-      throw new Error('火山引擎认证信息未配置')
-    }
-    
-    // 创建认证头
-    const headers = createAuthHeaders(accessKey, secretKey)
+    const headers = createAuthHeaders('GetVoiceChatStatus', API_VERSION, requestBody)
     
     // 发送请求
     const response = await fetch(url, {

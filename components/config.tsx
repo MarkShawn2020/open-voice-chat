@@ -1,10 +1,9 @@
 "use client"
 
 import { useAtom } from "jotai"
-import { AlertCircle, Phone } from "lucide-react"
+import { Settings } from "lucide-react"
 import React, { useState } from "react"
 
-import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -33,16 +32,14 @@ export const Config: React.FC = () => {
     setFormData({ ...formData, [field]: e.target.value })
   }
 
-  console.log(formData)
-
   return (
     <div className="mx-auto w-full max-w-md space-y-4">
       {/* 配置面板 */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Phone className="h-5 w-5" />
-            语音通话配置
+            <Settings className="h-5 w-5" />
+            RTC 配置
           </CardTitle>
           <CardDescription>配置火山引擎RTC参数</CardDescription>
         </CardHeader>
@@ -86,14 +83,6 @@ export const Config: React.FC = () => {
           </Button>
         </CardContent>
       </Card>
-
-      {/* 错误提示 */}
-      {rtcState.error && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{rtcState.error}</AlertDescription>
-        </Alert>
-      )}
     </div>
   )
 }
