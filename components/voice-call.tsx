@@ -242,8 +242,8 @@ export const VoiceCall: React.FC = () => {
             <div className="space-y-2">
               {rtcState.remoteUsers.map((userId) => (
                 <div key={userId} className="flex items-center justify-between rounded bg-gray-50 p-2">
-                  <span className="text-sm">{userId}</span>
-                  <span className="text-xs text-green-600">在线</span>
+                  <span className="text-sm truncate">{userId}</span>
+                  <span className="text-xs text-green-600 shrink-0">在线</span>
                 </div>
               ))}
             </div>
