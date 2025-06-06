@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { rtcActionsAtom, RTCConfig, rtcConfigAtom, rtcStateAtom } from "@/store/rtc"
+import { MicControl } from "./mic"
 
 export const Config: React.FC = () => {
   const [config, setConfig] = useAtom(rtcConfigAtom)
@@ -83,6 +84,9 @@ export const Config: React.FC = () => {
           </Button>
         </CardContent>
       </Card>
+
+      <MicControl />
+
     </div>
   )
 }

@@ -2,13 +2,12 @@
 
 import { useAtom } from "jotai"
 
-import { MicControl } from "@/components/mic"
-import { Button } from "@/components/ui/button" 
+import { Config } from "@/components/config"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { VoiceCall } from "@/components/voice-call"
-import {isChattingAtom} from "@/store/global";
-import { Config } from "@/components/config"
+import { isChattingAtom } from "@/store/global"
 
 const Main = () => {
   const [isChatting, setIsChatting] = useAtom(isChattingAtom)
@@ -40,10 +39,9 @@ export default function Web() {
       </div>
 
       <Tabs defaultValue="voice-call" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="config">参数配置</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="config">系统配置</TabsTrigger>
           <TabsTrigger value="voice-call">语音通话</TabsTrigger>
-          <TabsTrigger value="mic-control">麦克风控制</TabsTrigger>
           <TabsTrigger value="ai-chat">AI对话</TabsTrigger>
         </TabsList>
 
@@ -53,12 +51,6 @@ export default function Web() {
                 
         <TabsContent value="voice-call" className="mt-6">
           <VoiceCall />
-        </TabsContent>
-        
-        <TabsContent value="mic-control" className="mt-6">
-          <div className="flex justify-center">
-            <MicControl />
-          </div>
         </TabsContent>
         
         <TabsContent value="ai-chat" className="mt-6">
