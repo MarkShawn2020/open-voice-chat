@@ -10,7 +10,7 @@ import { startVoiceChat, stopVoiceChat } from '@/lib/voice-chat-actions'
 // 消息类型枚举
 export enum MESSAGE_TYPE {
   BRIEF = 'conv',
-  SUBTITLE = 'subv', 
+  SUBTITLE = 'subtitle', 
   FUNCTION_CALL = 'tool',
 }
 
@@ -30,11 +30,30 @@ interface AgentBriefMessage {
   }
 }
 
+/**
+ * @example
+ * ```json  
+ * {
+    "definite": false,
+    "language": "",
+    "mode": 1,
+    "paragraph": false,
+    "sequence": 49,
+    "text": "有啥事儿尽管说，中文英",
+    "timestamp": 1749234040654,
+    "userId": "voice_agent_a8d496ec-139f-4ade-b868-90f293adca56"
+  }
+ * ```
+ */
 interface SubtitleData {
   text: string
-  definite?: boolean
-  userId?: string
-  paragraph?: string
+  definite: boolean
+  userId: string
+  paragraph: boolean
+  language: string
+  mode: number
+  sequence: number
+  timestamp: number
 }
 
 interface SubtitleMessage {
@@ -400,11 +419,11 @@ function handleRoomBinaryMessageReceived(
 ) {
   try {
     const { type, value } = MessageParser.tlv2String(e.message)
-    const parsed = JSON.parse(value) as unknown
+    const parsed = JSON.parse(value) as {type: string, data: unknown}
     
-    console.log('收到房间二进制消息:', { userId: e.userId, type, parsed })
+    console.log('收到房间消息:', { userId: e.userId, type, parsed })
 
-    switch (type as MESSAGE_TYPE) {
+    switch (parsed.type as MESSAGE_TYPE) {
       case MESSAGE_TYPE.BRIEF:
         // 处理智能体状态变化
         handleAgentBrief(parsed as AgentBriefMessage, set, get)
@@ -412,7 +431,7 @@ function handleRoomBinaryMessageReceived(
         
       case MESSAGE_TYPE.SUBTITLE:
         // 处理字幕数据
-        handleSubtitleMessage(parsed as SubtitleMessage, set, get)
+        handleSubtitleMessage(parsed.data as SubtitleMessage, set, get)
         break
         
       case MESSAGE_TYPE.FUNCTION_CALL:
