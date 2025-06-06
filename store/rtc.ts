@@ -246,7 +246,7 @@ export const rtcActionsAtom = atom(null, (get, set, action: RTCAction) => {
           error: null
         }))
         
-        stopVoiceChat(config.appId, voiceChatState.taskId).then((result) => {
+        stopVoiceChat(config.appId, config.roomId, voiceChatState.taskId).then((result) => {
           if (result.success) {
             console.log('停止 AI 语音聊天成功')
             set(voiceChatStateAtom, (prev) => ({

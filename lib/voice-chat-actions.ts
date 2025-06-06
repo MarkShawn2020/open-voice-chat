@@ -192,7 +192,7 @@ export async function startVoiceChat(config: StartVoiceChatConfig): Promise<{
 /**
  * 停止AI语音聊天智能体
  */
-export async function stopVoiceChat(appId: string, taskId: string): Promise<{
+export async function stopVoiceChat(appId: string, roomId: string, taskId: string): Promise<{
   success: boolean
   error?: string
 }> {
@@ -202,6 +202,7 @@ export async function stopVoiceChat(appId: string, taskId: string): Promise<{
     // 构建请求体
     const requestBody = {
       AppId: appId,
+      RoomId: roomId,
       TaskId: taskId
     }
     
