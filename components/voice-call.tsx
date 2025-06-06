@@ -236,6 +236,42 @@ export const VoiceCall: React.FC = () => {
         </CardContent>
       </Card>
 
+      {/* AI状态显示 */}
+      {voiceChatState.isAgentActive && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Bot className="h-4 w-4 text-blue-600" />
+            <span className="text-sm font-medium">AI智能体状态</span>
+          </div>
+          
+          {voiceChatState.agentStatus && (
+            <div className="rounded bg-blue-50 p-2 space-y-1">
+              <div className="flex items-center justify-between text-xs">
+                <span>思考状态:</span>
+                <span className={voiceChatState.agentStatus.isThinking ? "text-yellow-600" : "text-gray-500"}>
+                  {voiceChatState.agentStatus.isThinking ? "思考中..." : "空闲"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span>说话状态:</span>
+                <span className={voiceChatState.agentStatus.isTalking ? "text-green-600" : "text-gray-500"}>
+                  {voiceChatState.agentStatus.isTalking ? "说话中..." : "静音"}
+                </span>
+              </div>
+            </div>
+          )}
+          
+          {voiceChatState.subtitle && (
+            <div className="rounded bg-gray-50 p-2">
+              <div className="text-xs text-gray-500 mb-1">
+                {voiceChatState.subtitle.userId} {voiceChatState.subtitle.isDefinite ? "(最终)" : "(实时)"}
+              </div>
+              <div className="text-sm">{voiceChatState.subtitle.text}</div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* 错误提示 */}
       {rtcState.error && (
         <Alert variant="destructive">

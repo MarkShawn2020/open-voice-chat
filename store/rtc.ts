@@ -1,9 +1,80 @@
 "use client"
 
 import VERTC, { IRTCEngine, MediaType, RoomProfileType } from '@volcengine/rtc'
-import { atom } from "jotai"
+import { atom } from 'jotai'
+import type { Getter, Setter } from 'jotai'
 import { atomWithStorage } from "jotai/utils"
+
 import { startVoiceChat, stopVoiceChat } from '@/lib/voice-chat-actions'
+
+// 消息类型枚举
+export enum MESSAGE_TYPE {
+  BRIEF = 'conv',
+  SUBTITLE = 'subv', 
+  FUNCTION_CALL = 'tool',
+}
+
+// 智能体状态码
+export enum AGENT_BRIEF {
+  THINKING = 'thinking',
+  SPEAKING = 'speaking', 
+  FINISHED = 'finished',
+  INTERRUPTED = 'interrupted',
+}
+
+// 消息类型定义
+interface AgentBriefMessage {
+  Stage?: {
+    Code: string
+    Description?: string
+  }
+}
+
+interface SubtitleData {
+  text: string
+  definite?: boolean
+  userId?: string
+  paragraph?: string
+}
+
+interface SubtitleMessage {
+  data?: SubtitleData[]
+}
+
+// TLV 解析工具
+class MessageParser {
+  static tlv2String(tlvBuffer: ArrayBuffer) {
+    try {
+      if (!tlvBuffer || tlvBuffer.byteLength < 8) {
+        throw new Error('Invalid TLV buffer')
+      }
+      
+      const dataView = new DataView(tlvBuffer)
+      const type = dataView.getUint32(0, false) // big-endian
+      const length = dataView.getUint32(4, false) // big-endian
+      
+      if (length === undefined || length < 0) {
+        throw new Error('Invalid TLV length')
+      }
+      
+      if (tlvBuffer.byteLength < 8 + length) {
+        throw new Error('Buffer too small for declared length')
+      }
+      
+      const valueBuffer = tlvBuffer.slice(8, 8 + length)
+      const decoder = new TextDecoder('utf-8')
+      const value = decoder.decode(valueBuffer)
+      
+      return {
+        type: type.toString(),
+        value: value
+      }
+    } catch (error) {
+      console.error('TLV 解析失败:', error)
+      throw error
+    }
+  }
+}
 
 // RTC 配置
 export interface RTCConfig {
@@ -23,7 +94,7 @@ export interface RTCState {
   error: string | null
 }
 
-// AI 语音聊天状态
+// AI 语音聊天状态类型
 export interface VoiceChatState {
   isAgentActive: boolean
   taskId: string | null
@@ -31,6 +102,17 @@ export interface VoiceChatState {
   error: string | null
   isStarting: boolean
   isStopping: boolean
+  subtitle?: {
+    text: string
+    userId: string
+    isDefinite: boolean
+    timestamp: number
+  }
+  agentStatus?: {
+    isThinking: boolean
+    isTalking: boolean
+    lastUpdate: number
+  }
 }
 
 export const defaultRTCConfig: RTCConfig = {
@@ -60,7 +142,7 @@ export const voiceChatStateAtom = atom<VoiceChatState>({
 })
 
 // RTC 操作原子
-export const rtcActionsAtom = atom(null, (get, set, action: RTCAction) => {
+export const rtcActionsAtom = atom(null, (get: Getter, set: Setter, action: RTCAction) => {
   const state = get(rtcStateAtom)
   const config = get(rtcConfigAtom)
   const voiceChatState = get(voiceChatStateAtom)
@@ -108,6 +190,11 @@ export const rtcActionsAtom = atom(null, (get, set, action: RTCAction) => {
         
         engine.on(VERTC.events.onUserLeave, (e: { userInfo: { userId: string } }) => {
           console.log('用户离开房间:', e.userInfo.userId)
+        })
+        
+        // 处理房间二进制消息 - AI智能体实时数据
+        engine.on(VERTC.events.onRoomBinaryMessageReceived, (e: { userId: string; message: ArrayBuffer }) => {
+          handleRoomBinaryMessageReceived(e, set, get)
         })
         
         set(rtcStateAtom, { ...state, engine, error: null })
@@ -299,3 +386,117 @@ export type RTCAction =
   | { type: 'STOP_VOICE_CHAT' }
   | { type: 'SET_ERROR'; payload: string }
   | { type: 'CLEAR_ERROR' }
+
+// 处理房间二进制消息
+function handleRoomBinaryMessageReceived(
+  e: { userId: string; message: ArrayBuffer }, 
+  set: Setter, 
+  get: Getter
+) {
+  try {
+    const { type, value } = MessageParser.tlv2String(e.message)
+    const parsed = JSON.parse(value) as unknown
+    
+    console.log('收到房间二进制消息:', { userId: e.userId, type, parsed })
+
+    switch (type as MESSAGE_TYPE) {
+      case MESSAGE_TYPE.BRIEF:
+        // 处理智能体状态变化
+        handleAgentBrief(parsed as AgentBriefMessage, set, get)
+        break
+        
+      case MESSAGE_TYPE.SUBTITLE:
+        // 处理字幕数据
+        handleSubtitleMessage(parsed as SubtitleMessage, set, get)
+        break
+        
+      case MESSAGE_TYPE.FUNCTION_CALL:
+        // 处理函数调用（暂时记录）
+        console.log('收到函数调用消息:', parsed)
+        break
+        
+      default:
+        console.log('未知消息类型:', type, parsed)
+    }
+  } catch (error) {
+    console.error('解析房间二进制消息失败:', error)
+  }
+}
+
+// 处理智能体状态变化
+function handleAgentBrief(
+  parsed: AgentBriefMessage, 
+  set: Setter, 
+  get: Getter
+) {
+  const { Stage } = parsed || {}
+  const { Code, Description } = Stage || {}
+  
+  if (!Code) return
+  
+  const currentState = get(voiceChatStateAtom)
+  const now = Date.now()
+  
+  const newAgentStatus = {
+    isThinking: false,
+    isTalking: false,
+    lastUpdate: now
+  }
+  
+  switch (Code) {
+    case AGENT_BRIEF.THINKING:
+      newAgentStatus.isThinking = true
+      console.log('AI智能体思考中...', Description)
+      break
+      
+    case AGENT_BRIEF.SPEAKING:
+      newAgentStatus.isTalking = true
+      console.log('AI智能体开始说话...', Description)
+      break
+      
+    case AGENT_BRIEF.FINISHED:
+      console.log('AI智能体结束说话', Description)
+      break
+      
+    case AGENT_BRIEF.INTERRUPTED:
+      console.log('AI智能体被打断', Description)
+      break
+      
+    default:
+      console.log('未知智能体状态:', Code, Description)
+      return
+  }
+  
+  set(voiceChatStateAtom, {
+    ...currentState,
+    agentStatus: newAgentStatus
+  })
+}
+
+// 处理字幕消息
+function handleSubtitleMessage(
+  parsed: SubtitleMessage, 
+  set: Setter, 
+  get: Getter
+) {
+  const data = parsed.data?.[0]
+  if (!data) return
+  
+  const { text, definite, userId, paragraph } = data
+  
+  if (text) {
+    const currentState = get(voiceChatStateAtom)
+    
+    set(voiceChatStateAtom, {
+      ...currentState,
+      subtitle: {
+        text,
+        userId: userId || 'unknown',
+        isDefinite: !!definite,
+        timestamp: Date.now()
+      }
+    })
+    
+    console.log('收到字幕:', { text, userId, definite, paragraph })
+  }
+}
