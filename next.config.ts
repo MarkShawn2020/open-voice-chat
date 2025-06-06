@@ -4,6 +4,7 @@ import { type NextConfig } from "next"
 import { env } from "./env.mjs"
 
 const config: NextConfig = {
+  allowedDevOrigins: ["http://127.0.0.1:3000", "http://127.0.0.1:59435"],
   reactStrictMode: true,
   logging: {
     fetches: {

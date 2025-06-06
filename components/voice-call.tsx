@@ -169,7 +169,7 @@ export const VoiceCall: React.FC = () => {
   }
 
   return (
-    <div className="w-full flex flex-col p-4">
+    <div className="w-full h-screen flex flex-col p-4">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 min-h-0">
         
         {/* 左侧：控制面板 */}
