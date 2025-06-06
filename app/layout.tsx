@@ -124,14 +124,28 @@ export default function RootLayout({
           href="https://fonts.gstatic.com"
           crossOrigin="anonymous"
         />
+        <meta name="color-scheme" content="light dark" />
       </head>
       <body
-        className={`min-h-screen bg-background font-sans antialiased ${inter.className}`}
+        className={`
+          min-h-screen font-sans antialiased selection:bg-blue-100 selection:text-blue-900
+          ${inter.className}
+        `}
         suppressHydrationWarning
       >
         <Providers>
           <div className="relative flex min-h-screen flex-col">
-            <main className="flex-1">{children}</main>
+            {/* Global Loading Indicator */}
+            <div id="global-loading" className="hidden fixed inset-0 z-50 bg-white/80 backdrop-blur-sm">
+              <div className="flex items-center justify-center h-full">
+                <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-500 border-t-transparent"></div>
+              </div>
+            </div>
+            
+            {/* Main Content */}
+            <main className="flex-1 relative">
+              {children}
+            </main>
           </div>
         </Providers>
         <Analytics />

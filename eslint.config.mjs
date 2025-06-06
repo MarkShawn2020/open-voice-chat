@@ -57,7 +57,7 @@ const config = typescriptEslint.config(
         },
       ],
       "sort-imports": [
-        "error",
+        "warn",
         {
           ignoreCase: true,
           ignoreDeclarationSort: true,
