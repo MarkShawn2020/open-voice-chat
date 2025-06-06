@@ -267,45 +267,80 @@ function handleSubtitleMessage(
       }
     })
     
-    // 处理聊天记录
-    if (definite && paragraph) {
-      // 只有当消息完整（definite=true, paragraph=true）时才添加到聊天记录
-      const isUser = userId === config.uid
-      const isAgent = userId?.startsWith('voice_agent_')
+    // 处理聊天记录 - 支持实时更新
+    const isUser = userId === config.uid
+    const isAgent = userId?.startsWith('voice_agent_')
+    
+    if (isUser || isAgent) {
+      const role = isUser ? 'user' : 'assistant'
+      const chatHistory = [...currentState.chatHistory]
       
-      if (isUser || isAgent) {
+      // 查找最后一条来自同一用户的消息
+      const lastMessageIndex = chatHistory.length - 1
+      const lastMessage = chatHistory[lastMessageIndex]
+      
+      const isSameUser = lastMessage && lastMessage.userId === userId
+      const isRecentMessage = lastMessage && (Date.now() - lastMessage.timestamp) < 5000 // 5秒内
+      
+      if (paragraph) {
+        // 分句完成，总是创建新的聊天记录
         const messageId = `${userId}-${Date.now()}`
         const newMessage: ChatMessage = {
           id: messageId,
-          role: isUser ? 'user' : 'assistant',
+          role,
           content: text,
           timestamp: Date.now(),
           userId: userId || 'unknown',
-          isComplete: true
+          isComplete: !!definite // definite为true时表示完全确定
         }
         
         // 检查是否已存在相似消息（避免重复）
-        const lastMessage = currentState.chatHistory[currentState.chatHistory.length - 1]
         const isDuplicate = lastMessage && 
           lastMessage.userId === userId && 
           lastMessage.content === text &&
           (Date.now() - lastMessage.timestamp) < 2000 // 2秒内的相同消息视为重复
         
         if (!isDuplicate) {
-          set(voiceChatStateAtom, {
-            ...currentState,
-            subtitle: {
-              text,
-              userId: userId || 'unknown',
-              isDefinite: !!definite,
-              timestamp: Date.now()
-            },
-            chatHistory: [...currentState.chatHistory, newMessage]
-          })
-          
-          console.log('新增聊天记录:', newMessage)
+          chatHistory.push(newMessage)
+          console.log('分句完成，新增聊天记录:', { text, userId, paragraph, definite })
         }
+      } else if (isSameUser && isRecentMessage && !lastMessage.isComplete) {
+        // 实时更新最后一条消息（未分句的情况）
+        chatHistory[lastMessageIndex] = {
+          ...lastMessage,
+          content: text,
+          timestamp: Date.now(),
+          isComplete: false // 未分句时保持为非完整状态
+        }
+        console.log('实时更新聊天记录:', { text, userId, isUpdating: true })
+      } else if (!isSameUser || !isRecentMessage) {
+        // 添加新的实时消息（来自不同用户或时间间隔较长）
+        const messageId = `${userId}-${Date.now()}`
+        const newMessage: ChatMessage = {
+          id: messageId,
+          role,
+          content: text,
+          timestamp: Date.now(),
+          userId: userId || 'unknown',
+          isComplete: false
+        }
+        chatHistory.push(newMessage)
+        console.log('新用户或新会话，新增实时消息:', { text, userId })
       }
+      
+      // 更新状态
+      set(voiceChatStateAtom, {
+        ...currentState,
+        subtitle: {
+          text,
+          userId: userId || 'unknown',
+          isDefinite: !!definite,
+          timestamp: Date.now()
+        },
+        chatHistory
+      })
+      
+      console.log('更新聊天记录:', { text, userId, definite, paragraph, chatHistoryLength: chatHistory.length })
     }
     
     // console.log('收到字幕:', { text, userId, definite, paragraph })

@@ -26,14 +26,17 @@ const ChatMessageItem: React.FC<{ message: ChatMessage }> = ({ message }) => {
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-3`}>
       <div className={`max-w-[80%] rounded-lg px-3 py-2 ${
         isUser 
-          ? 'bg-blue-500 text-white' 
-          : 'bg-gray-100 text-gray-900'
+          ? `bg-blue-500 text-white ${!message.isComplete ? 'opacity-70' : ''}` 
+          : `bg-gray-100 text-gray-900 ${!message.isComplete ? 'opacity-70' : ''}`
       }`}>
         <div className="text-sm break-words">{message.content}</div>
-        <div className={`text-xs mt-1 opacity-70 ${
+        <div className={`text-xs mt-1 opacity-70 flex items-center gap-1 ${
           isUser ? 'text-blue-100' : 'text-gray-500'
         }`}>
           {formatTime(message.timestamp)}
+          {!message.isComplete && (
+            <span className="text-xs">实时</span>
+          )}
         </div>
       </div>
     </div>
@@ -311,45 +314,6 @@ export const VoiceCall: React.FC = () => {
               </div>
             </CardContent>
           </Card>
-
-          {/* AI状态显示 */}
-          {voiceChatState.isAgentActive && (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Bot className="h-4 w-4 text-blue-600" />
-                  AI智能体状态
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {voiceChatState.agentStatus && (
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="flex items-center justify-between">
-                      <span>思考状态:</span>
-                      <span className={voiceChatState.agentStatus.isThinking ? "text-yellow-600" : "text-gray-500"}>
-                        {voiceChatState.agentStatus.isThinking ? "思考中..." : "空闲"}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span>说话状态:</span>
-                      <span className={voiceChatState.agentStatus.isTalking ? "text-green-600" : "text-gray-500"}>
-                        {voiceChatState.agentStatus.isTalking ? "说话中..." : "静音"}
-                      </span>
-                    </div>
-                  </div>
-                )}
-                
-                {voiceChatState.subtitle && (
-                  <div className="rounded bg-gray-50 p-3">
-                    <div className="text-xs text-gray-500 mb-1">
-                      实时字幕 - {voiceChatState.subtitle.userId} {voiceChatState.subtitle.isDefinite ? "(最终)" : "(实时)"}
-                    </div>
-                    <div className="text-sm">{voiceChatState.subtitle.text}</div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
 
           {/* 错误提示 */}
           {rtcState.error && (
