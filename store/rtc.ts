@@ -258,15 +258,20 @@ export const rtcActionsAtom = atom(null, (get: Getter, set: Setter, action: RTCA
       break
       
     case 'START_LOCAL_AUDIO':
-      console.log('启动音频采集')
       if (!state.engine) {
         set(rtcStateAtom, { ...state, error: '引擎未初始化' })
         return
       }
-      
-      state.engine.startAudioCapture().then(() => {
+
+      const audioEngine = state.engine
+      audioEngine.publishStream(MediaType.AUDIO).then(() => {
+        console.log('发布音频流成功') 
+        return audioEngine.startAudioCapture()
+      }).then(() => {
+        console.log('启动音频采集成功')
         set(rtcStateAtom, { ...state, isLocalAudioEnabled: true, error: null })
       }).catch((error) => {
+        console.error('启动音频采集失败:', error)
         set(rtcStateAtom, { ...state, error: `启动音频采集失败: ${error.message}` })
       })
       break

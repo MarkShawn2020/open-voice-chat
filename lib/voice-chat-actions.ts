@@ -85,21 +85,14 @@ export async function startVoiceChat(config: StartVoiceChatConfig): Promise<{
       TaskId: taskId,
       Config: {
         ASRConfig: {
-          Provider: 'volcengine',
+          Provider: 'volcano',
           ProviderParams: {
-            app: {
-              appid: process.env.VOLCENGINE_ASR_APP_ID || '94****11',
-              token: process.env.VOLCENGINE_ASR_ACCESS_TOKEN || 'OaO****ws1',
-              cluster: process.env.VOLCENGINE_ASR_CLUSTER || 'volcano_asr'
-            },
-            audio: {
-              encoding: 'pcm',
-              rate: 16000,
-              channel: 1,
-              bits: 16
-            }
+            Mode: "bigmodel",
+            AppId: process.env.VOLCENGINE_ASR_APP_ID || '94****11',
+            AccessToken: process.env.VOLCENGINE_ASR_ACCESS_TOKEN || 'OaO****ws1',
+            "ApiResourceId": "volc.bigasr.sauc.duration",
+            "StreamMode": 0
           },
-          ResourceId: 'volc.service_type.10002',
           VolumeGain: 0.3,
           InterruptConfig: {
             InterruptSpeechDuration: 500,
@@ -108,18 +101,18 @@ export async function startVoiceChat(config: StartVoiceChatConfig): Promise<{
           TurnDetectionMode: 0
         },
         TTSConfig: {
-          Provider: 'volcano',
+          Provider: 'volcano_bidirection',
           ProviderParams: {
             app: {
               appid: process.env.VOLCENGINE_TTS_APP_ID || '94****11',
-              cluster: process.env.VOLCENGINE_TTS_CLUSTER || 'volcano_tts'
+              token: process.env.VOLCENGINE_TTS_ACCESS_TOKEN || 'volcano_tts'
             },
-            audio: {
-              voice_type: 'BV001_streaming',
-              speed_ratio: 1.0,
-              volume_ratio: 1.0,
-              pitch_ratio: 1.0
-            }
+            "audio": {
+              "voice_type": "zh_male_qingshuangnanda_mars_bigtts",
+              "speech_rate": 0,
+              "pitch_rate": 0
+          },
+          "ResourceId": "volc.service_type.10029"
           },
           IgnoreBracketText: [1, 2] // 过滤中英文括号内容
         },
@@ -134,7 +127,17 @@ export async function startVoiceChat(config: StartVoiceChatConfig): Promise<{
             '请用自然、口语化的方式对话，每次回复控制在100字以内。'
           ],
           HistoryLength: 5,
-          Prefill: false
+          Prefill: true,
+          "UserPrompts": [
+            {
+                "Role": "user",
+                "Content": "你好"
+            },
+            {
+                "Role": "assistant",
+                "Content": "有什么可以帮到你的？"
+            }
+        ],
         },
         SubtitleConfig: {
           DisableRTSSubtitle: false,
