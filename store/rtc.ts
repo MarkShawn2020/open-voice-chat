@@ -401,7 +401,7 @@ export const rtcStateAtom = atom<RTCState>({
   remoteUsers: [],
   error: null
 })
-export const voiceChatStateAtom = atom<VoiceChatState>({
+export const voiceChatStateAtom = atomWithStorage<VoiceChatState>("voiceChatState", {
   isAgentActive: false,
   taskId: null,
   agentUserId: null,
@@ -409,7 +409,7 @@ export const voiceChatStateAtom = atom<VoiceChatState>({
   isStarting: false,
   isStopping: false,
   chatHistory: []
-})
+}, undefined, {getOnInit: true})
 
 // RTC 操作原子
 export const rtcActionsAtom = atom(null, (get: Getter, set: Setter, action: RTCAction) => {
@@ -638,6 +638,19 @@ export const rtcActionsAtom = atom(null, (get: Getter, set: Setter, action: RTCA
       }
       break
       
+    case 'DELETE_CHAT_MESSAGE':
+      const chatHistory = [...voiceChatState.chatHistory]
+      const index = chatHistory.findIndex((message) => message.id === action.messageId)
+      if (index !== -1) {
+        chatHistory.splice(index, 1)
+        set(voiceChatStateAtom, (prev) => ({ ...prev, chatHistory }))
+      }
+      break
+
+    case 'CLEAR_CHAT_HISTORY':
+      set(voiceChatStateAtom, (prev) => ({ ...prev, chatHistory: [] }))
+      break
+
     case 'SET_ERROR':
       console.log('设置错误:', action.payload)
       set(rtcStateAtom, { ...state, error: action.payload })
@@ -659,5 +672,7 @@ export type RTCAction =
   | { type: 'STOP_LOCAL_AUDIO' }
   | { type: 'START_VOICE_CHAT'; systemMessage?: string; welcomeMessage?: string }
   | { type: 'STOP_VOICE_CHAT' }
+  | { type: 'DELETE_CHAT_MESSAGE'; messageId: string }
+  | { type: 'CLEAR_CHAT_HISTORY' }
   | { type: 'SET_ERROR'; payload: string }
   | { type: 'CLEAR_ERROR' }

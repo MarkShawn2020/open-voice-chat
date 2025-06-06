@@ -13,7 +13,11 @@ import { ChatMessage, rtcActionsAtom, rtcConfigAtom, rtcStateAtom, voiceChatStat
 
 // 聊天消息组件
 const ChatMessageItem: React.FC<{ message: ChatMessage }> = ({ message }) => {
+  const [, dispatchRtcAction] = useAtom(rtcActionsAtom)
   const isUser = message.role === 'user'
+  const [showContextMenu, setShowContextMenu] = useState(false)
+  const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 })
+  
   const formatTime = (timestamp: number) => {
     return new Date(timestamp).toLocaleTimeString('zh-CN', { 
       hour: '2-digit', 
@@ -22,29 +26,75 @@ const ChatMessageItem: React.FC<{ message: ChatMessage }> = ({ message }) => {
     })
   }
 
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault()
+    setContextMenuPosition({ x: e.clientX, y: e.clientY })
+    setShowContextMenu(true)
+  }
+
+  const handleDeleteMessage = () => {
+    dispatchRtcAction({ type: 'DELETE_CHAT_MESSAGE', messageId: message.id })
+    setShowContextMenu(false)
+  }
+
+  const handleClickOutside = () => {
+    setShowContextMenu(false)
+  }
+
+  useEffect(() => {
+    if (showContextMenu) {
+      document.addEventListener('click', handleClickOutside)
+      return () => document.removeEventListener('click', handleClickOutside)
+    }
+  }, [showContextMenu])
+
   return (
-    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-3`}>
-      <div className={`max-w-[80%] rounded-lg px-3 py-2 ${
-        isUser 
-          ? `bg-blue-500 text-white ${!message.isComplete ? 'opacity-70' : ''}` 
-          : `bg-gray-100 text-gray-900 ${!message.isComplete ? 'opacity-70' : ''}`
-      }`}>
-        <div className="text-sm break-words">{message.content}</div>
-        <div className={`text-xs mt-1 opacity-70 flex items-center gap-1 ${
-          isUser ? 'text-blue-100' : 'text-gray-500'
+    <>
+      <div 
+        className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-3`}
+        onContextMenu={handleContextMenu}
+      >
+        <div className={`max-w-[80%] rounded-lg px-3 py-2 cursor-pointer select-text ${
+          isUser 
+            ? `bg-blue-500 text-white ${!message.isComplete ? 'opacity-70' : ''}` 
+            : `bg-gray-100 text-gray-900 ${!message.isComplete ? 'opacity-70' : ''}`
         }`}>
-          {formatTime(message.timestamp)}
-          {!message.isComplete && (
-            <span className="text-xs">实时</span>
-          )}
+          <div className="text-sm break-words">{message.content}</div>
+          <div className={`text-xs mt-1 opacity-70 flex items-center gap-1 ${
+            isUser ? 'text-blue-100' : 'text-gray-500'
+          }`}>
+            {formatTime(message.timestamp)}
+            {!message.isComplete && (
+              <span className="text-xs">实时</span>
+            )}
+            {!message.isDefinite && (
+              <span className="text-xs">·临时</span>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+      
+      {/* 右键菜单 */}
+      {showContextMenu && (
+        <div 
+          className="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[120px]"
+          style={{ left: contextMenuPosition.x, top: contextMenuPosition.y }}
+        >
+          <button
+            onClick={handleDeleteMessage}
+            className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+          >
+            🗑️ 删除消息
+          </button>
+        </div>
+      )}
+    </>
   )
 }
 
 // 聊天记录组件
 const ChatHistory: React.FC<{ messages: ChatMessage[] }> = ({ messages }) => {
+  const [, dispatchRtcAction] = useAtom(rtcActionsAtom)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
 
   // 自动滚动到底部
@@ -54,16 +104,37 @@ const ChatHistory: React.FC<{ messages: ChatMessage[] }> = ({ messages }) => {
     }
   }, [messages])
 
+  const handleClearHistory = () => {
+    if (confirm('确定要清除所有聊天记录吗？此操作不可撤销。')) {
+      dispatchRtcAction({ type: 'CLEAR_CHAT_HISTORY' })
+    }
+  }
+
   return (
     <Card className="h-full flex flex-col">
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base">
-          <MessageCircle className="h-4 w-4" />
-          聊天记录
-        </CardTitle>
-        <CardDescription className="text-sm">
-          实时对话记录 ({messages.length} 条消息)
-        </CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <MessageCircle className="h-4 w-4" />
+              聊天记录
+            </CardTitle>
+            <CardDescription className="text-sm">
+              实时对话记录 ({messages.length} 条消息)
+            </CardDescription>
+          </div>
+          {messages.length > 0 && (
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={handleClearHistory}
+              className="text-gray-500 hover:text-red-500 p-1 h-auto"
+              title="清除聊天记录"
+            >
+              🗑️
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="flex-1 p-0">
         <div 
