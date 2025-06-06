@@ -134,6 +134,8 @@ export const useUpdateMicVolume = () => {
     // 清理函数
     return () => {
       console.log('Cleaning up audio resources')
+
+      updateVolume(0)
       
       // 停止音频处理
       if (processor) {
