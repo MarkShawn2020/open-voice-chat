@@ -1,15 +1,18 @@
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
-import { useMicActions, useMicStore } from "@/store/mic"
+import { useInitMics, useMicActions, useMicStore, useUpdateMicVolume } from "@/store/mic"
 
 export const CurMicVolume = () => {
   const { curMicState } = useMicStore()
   const { toggleMic } = useMicActions()
+  useUpdateMicVolume()
 
   return (
     <div className="space-y-3 rounded-lg border bg-gray-50 p-4">
       <h4 className="text-sm font-semibold text-gray-800">Microphone Control</h4>
+
+      
 
       {/* 权限状态 */}
       <div className="flex items-center justify-between">
@@ -38,7 +41,7 @@ export const CurMicVolume = () => {
       </div>
 
       {/* 音量指示器 */}
-      {curMicState.isPermissionGranted && (
+      {curMicState.isPermissionGranted && curMicState.isOn && (
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-sm text-gray-600">Volume Level</span>
@@ -58,6 +61,7 @@ export const CurMicVolume = () => {
 export const Mics = () => {
   const { mics, curMicId } = useMicStore()
   const { changeMic } = useMicActions()
+  useInitMics()
 
   console.log({ mics, curMicId })
 
