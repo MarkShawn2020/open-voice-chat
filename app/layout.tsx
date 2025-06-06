@@ -1,7 +1,5 @@
 import "styles/tailwind.css"
 import { Metadata } from "next"
-import { Provider } from "jotai"
-import { jotaiStore } from "@/store/voice-chat"
 
 export const metadata: Metadata = {
   title: "Next.js Enterprise Boilerplate",
@@ -23,12 +21,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>
-        <Provider store={jotaiStore}>
-
-        {children}
-        </Provider>
-        </body>
+      <body>{children}</body>
     </html>
   )
 }

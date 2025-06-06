@@ -1,22 +1,14 @@
-'use client'
+"use client"
 
-import { atom, createStore as createJotaiStore } from "jotai"
-import { exportPages } from "next/dist/export/worker"
 import { useEffect } from "react"
 import { create } from "zustand"
-import { shallow } from "zustand/shallow"
-
-export const isChattingAtom = atom(false)
-
-export const curMicVolumeAtom = atom(0)
-
-export const jotaiStore = createJotaiStore()
 
 export interface IMicState {
   isPermissionGranted: boolean
   isOn: boolean
   volume: number
 }
+
 export interface IMicrophoneManager {
   mics: MediaDeviceInfo[]
   curMicId: string | null
@@ -57,26 +49,24 @@ export const useMicsStore = create<IMicrophoneManager>((set, get) => ({
   },
   initMics: (mics: MediaDeviceInfo[]) => {
     set({ mics })
-    if(mics.length > 0) {
+    if (mics.length > 0) {
       get().changeMic(mics[0]!.deviceId)
     }
   },
   changeMic: (id: string) => {
-    set({ curMicId: id })    
+    set({ curMicId: id })
     // 检查麦克风权限并开始监控
-    navigator.mediaDevices.getUserMedia({ audio: { deviceId: id } })
-      .then((stream) => {
-        // 更新权限状态
-        set({ 
-          curMicState: { 
-            ...get().curMicState, 
-            isPermissionGranted: true, 
-          } 
-        })
+    navigator.mediaDevices.getUserMedia({ audio: { deviceId: id } }).then((stream) => {
+      // 更新权限状态
+      set({
+        curMicState: {
+          ...get().curMicState,
+          isPermissionGranted: true,
+        },
       })
+    })
   },
 }))
-
 
 export const useInitMics = () => {
   const { initMics } = useMicsStore()
@@ -86,8 +76,7 @@ export const useInitMics = () => {
     navigator.mediaDevices
       .enumerateDevices()
       .then((devices) => {
-        const mics = devices
-          .filter((device) => device.kind === "audioinput")
+        const mics = devices.filter((device) => device.kind === "audioinput")
         initMics(mics)
       })
       .catch((err) => {
@@ -95,7 +84,6 @@ export const useInitMics = () => {
       })
   }, [])
 }
-
 
 export const useUpdateMicVolume = () => {
   const { curMicState, updateVolume, curMicId } = useMicsStore()
@@ -115,7 +103,7 @@ export const useUpdateMicVolume = () => {
         audioContext = new AudioContext()
         source = audioContext.createMediaStreamSource(stream)
         processor = audioContext.createScriptProcessor(4096, 1, 1)
-        
+
         source.connect(processor)
         processor.connect(audioContext.destination)
 
@@ -128,35 +116,35 @@ export const useUpdateMicVolume = () => {
         }
       })
       .catch((err) => {
-        console.error('Failed to get user media:', err)
+        console.error("Failed to get user media:", err)
       })
 
     // 清理函数
     return () => {
-      console.log('Cleaning up audio resources')
+      console.log("Cleaning up audio resources")
 
       updateVolume(0)
-      
+
       // 停止音频处理
       if (processor) {
         processor.onaudioprocess = null
         processor.disconnect()
       }
-      
+
       // 断开音频源连接
       if (source) {
         source.disconnect()
       }
-      
+
       // 停止媒体流轨道
       if (stream) {
-        stream.getTracks().forEach(track => {
+        stream.getTracks().forEach((track) => {
           track.stop()
         })
       }
-      
+
       // 关闭音频上下文
-      if (audioContext && audioContext.state !== 'closed') {
+      if (audioContext && audioContext.state !== "closed") {
         audioContext.close()
       }
     }

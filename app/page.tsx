@@ -2,8 +2,8 @@
 
 import { Mics } from "@/components/mic"
 import { Button } from "@/components/ui/button"
+import {isChattingAtom} from "@/store/global";
 import { useAtom } from "jotai"
-import { isChattingAtom } from "../store/voice-chat"
 
 const Main = () => {
   const [isChatting, setIsChatting] = useAtom(isChattingAtom)

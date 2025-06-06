@@ -1,7 +1,7 @@
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
-import { useInitMics, useMicsStore, useUpdateMicVolume } from "@/store/voice-chat"
+import { useInitMics, useMicsStore, useUpdateMicVolume } from "@/store/mic"
 
 export const CurMicVolume = () => {
   const { curMicState, toggleMic } = useMicsStore()
