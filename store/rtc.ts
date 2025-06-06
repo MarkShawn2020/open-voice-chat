@@ -24,6 +24,7 @@ export enum AGENT_BRIEF {
 
 // 消息类型定义
 interface AgentBriefMessage {
+  type: string
   Stage?: {
     Code: string
     Description?: string
@@ -31,6 +32,7 @@ interface AgentBriefMessage {
 }
 
 /**
+ * 字幕数据结构定义
  * @example
  * ```json  
  * {
@@ -51,17 +53,71 @@ interface SubtitleData {
   userId: string
   paragraph: boolean
   language: string
-  mode: number
+  mode?: number
   sequence: number
-  timestamp: number
+  timestamp?: number
 }
 
 interface SubtitleMessage {
+  type: string // 固定为 "subtitle"
   data?: SubtitleData[]
 }
 
 // TLV 解析工具
 class MessageParser {
+  /**
+   * 解析火山引擎字幕二进制消息
+   * 消息格式：magic number (4 bytes "subv") + length (4 bytes) + subtitle_message
+   */
+  static parseSubtitleMessage(messageBuffer: ArrayBuffer): SubtitleMessage | null {
+    try {
+      if (!messageBuffer || messageBuffer.byteLength < 8) {
+        console.warn('字幕消息缓冲区太小')
+        return null
+      }
+      
+      const dataView = new DataView(messageBuffer)
+      
+      // 检查 magic number "subv" (0x73756276)
+      const magicNumber = dataView.getUint32(0, false) // big-endian
+      if (magicNumber !== 0x73756276) {
+        console.warn('字幕消息 magic number 不匹配')
+        return null
+      }
+      
+      // 读取消息长度
+      const length = dataView.getUint32(4, false) // big-endian
+      
+      if (messageBuffer.byteLength < 8 + length) {
+        console.warn('字幕消息长度不匹配')
+        return null
+      }
+      
+      // 提取字幕消息内容
+      const subtitleBuffer = messageBuffer.slice(8, 8 + length)
+      const decoder = new TextDecoder('utf-8')
+      const subtitleJson = decoder.decode(subtitleBuffer)
+      
+      // 解析 JSON
+      const parsedData = JSON.parse(subtitleJson) as SubtitleMessage
+      
+      // 验证消息类型
+      if (parsedData.type !== 'subtitle') {
+        console.warn('字幕消息类型不正确:', parsedData.type)
+        return null
+      }
+      
+      return parsedData
+    } catch (error) {
+      console.error('字幕消息解析失败:', error)
+      return null
+    }
+  }
+
+  /**
+   * 向后兼容的 TLV 解析方法
+   * @deprecated 建议使用 parseSubtitleMessage 方法
+   */
   static tlv2String(tlvBuffer: ArrayBuffer) {
     try {
       if (!tlvBuffer || tlvBuffer.byteLength < 8) {
@@ -92,6 +148,124 @@ class MessageParser {
       console.error('TLV 解析失败:', error)
       throw error
     }
+  }
+}
+
+// 处理房间二进制消息
+function handleRoomBinaryMessageReceived(
+  e: { userId: string; message: ArrayBuffer }, 
+  set: Setter, 
+  get: Getter
+) {
+  try {
+    // 首先尝试使用新的字幕解析方法
+    const subtitleMessage = MessageParser.parseSubtitleMessage(e.message)
+    if (subtitleMessage) {
+      console.log('收到字幕消息:', { userId: e.userId, subtitleMessage })
+      handleSubtitleMessage(subtitleMessage, set, get)
+      return
+    }
+    
+    // 如果不是字幕消息，使用向后兼容的 TLV 解析
+    const { type, value } = MessageParser.tlv2String(e.message)
+    const parsed = JSON.parse(value) as {type: string, data: unknown}
+    
+    console.log('收到房间消息:', { userId: e.userId, type, parsed })
+
+    switch (parsed.type as MESSAGE_TYPE) {
+      case MESSAGE_TYPE.BRIEF:
+        // 处理智能体状态变化
+        handleAgentBrief(parsed as AgentBriefMessage, set, get)
+        break
+        
+      case MESSAGE_TYPE.FUNCTION_CALL:
+        // 处理函数调用（暂时记录）
+        console.log('收到函数调用消息:', parsed)
+        break
+        
+      default:
+        console.log('未知消息类型:', type, parsed)
+    }
+  } catch (error) {
+    console.error('解析房间二进制消息失败:', error)
+  }
+}
+
+// 处理智能体状态变化
+function handleAgentBrief(
+  parsed: AgentBriefMessage, 
+  set: Setter, 
+  get: Getter
+) {
+  const { Stage } = parsed || {}
+  const { Code, Description } = Stage || {}
+  
+  if (!Code) return
+  
+  const currentState = get(voiceChatStateAtom)
+  const now = Date.now()
+  
+  const newAgentStatus = {
+    isThinking: false,
+    isTalking: false,
+    lastUpdate: now
+  }
+  
+  switch (Code) {
+    case AGENT_BRIEF.THINKING:
+      newAgentStatus.isThinking = true
+      console.log('AI智能体思考中...', Description)
+      break
+      
+    case AGENT_BRIEF.SPEAKING:
+      newAgentStatus.isTalking = true
+      console.log('AI智能体开始说话...', Description)
+      break
+      
+    case AGENT_BRIEF.FINISHED:
+      console.log('AI智能体结束说话', Description)
+      break
+      
+    case AGENT_BRIEF.INTERRUPTED:
+      console.log('AI智能体被打断', Description)
+      break
+      
+    default:
+      console.log('未知智能体状态:', Code, Description)
+      return
+  }
+  
+  set(voiceChatStateAtom, {
+    ...currentState,
+    agentStatus: newAgentStatus
+  })
+}
+
+// 处理字幕消息
+function handleSubtitleMessage(
+  parsed: SubtitleMessage, 
+  set: Setter, 
+  get: Getter
+) {
+  const data = parsed.data?.[0]
+  if (!data) return
+  
+  const { text, definite, userId, paragraph } = data
+  
+  if (text) {
+    const currentState = get(voiceChatStateAtom)
+    
+    set(voiceChatStateAtom, {
+      ...currentState,
+      subtitle: {
+        text,
+        userId: userId || 'unknown',
+        isDefinite: !!definite,
+        timestamp: Date.now()
+      }
+    })
+    
+    // console.log('收到字幕:', { text, userId, definite, paragraph })
   }
 }
 
@@ -410,117 +584,3 @@ export type RTCAction =
   | { type: 'STOP_VOICE_CHAT' }
   | { type: 'SET_ERROR'; payload: string }
   | { type: 'CLEAR_ERROR' }
-
-// 处理房间二进制消息
-function handleRoomBinaryMessageReceived(
-  e: { userId: string; message: ArrayBuffer }, 
-  set: Setter, 
-  get: Getter
-) {
-  try {
-    const { type, value } = MessageParser.tlv2String(e.message)
-    const parsed = JSON.parse(value) as {type: string, data: unknown}
-    
-    console.log('收到房间消息:', { userId: e.userId, type, parsed })
-
-    switch (parsed.type as MESSAGE_TYPE) {
-      case MESSAGE_TYPE.BRIEF:
-        // 处理智能体状态变化
-        handleAgentBrief(parsed as AgentBriefMessage, set, get)
-        break
-        
-      case MESSAGE_TYPE.SUBTITLE:
-        // 处理字幕数据
-        handleSubtitleMessage(parsed.data as SubtitleMessage, set, get)
-        break
-        
-      case MESSAGE_TYPE.FUNCTION_CALL:
-        // 处理函数调用（暂时记录）
-        console.log('收到函数调用消息:', parsed)
-        break
-        
-      default:
-        console.log('未知消息类型:', type, parsed)
-    }
-  } catch (error) {
-    console.error('解析房间二进制消息失败:', error)
-  }
-}
-
-// 处理智能体状态变化
-function handleAgentBrief(
-  parsed: AgentBriefMessage, 
-  set: Setter, 
-  get: Getter
-) {
-  const { Stage } = parsed || {}
-  const { Code, Description } = Stage || {}
-  
-  if (!Code) return
-  
-  const currentState = get(voiceChatStateAtom)
-  const now = Date.now()
-  
-  const newAgentStatus = {
-    isThinking: false,
-    isTalking: false,
-    lastUpdate: now
-  }
-  
-  switch (Code) {
-    case AGENT_BRIEF.THINKING:
-      newAgentStatus.isThinking = true
-      console.log('AI智能体思考中...', Description)
-      break
-      
-    case AGENT_BRIEF.SPEAKING:
-      newAgentStatus.isTalking = true
-      console.log('AI智能体开始说话...', Description)
-      break
-      
-    case AGENT_BRIEF.FINISHED:
-      console.log('AI智能体结束说话', Description)
-      break
-      
-    case AGENT_BRIEF.INTERRUPTED:
-      console.log('AI智能体被打断', Description)
-      break
-      
-    default:
-      console.log('未知智能体状态:', Code, Description)
-      return
-  }
-  
-  set(voiceChatStateAtom, {
-    ...currentState,
-    agentStatus: newAgentStatus
-  })
-}
-
-// 处理字幕消息
-function handleSubtitleMessage(
-  parsed: SubtitleMessage, 
-  set: Setter, 
-  get: Getter
-) {
-  const data = parsed.data?.[0]
-  if (!data) return
-  
-  const { text, definite, userId, paragraph } = data
-  
-  if (text) {
-    const currentState = get(voiceChatStateAtom)
-    
-    set(voiceChatStateAtom, {
-      ...currentState,
-      subtitle: {
-        text,
-        userId: userId || 'unknown',
-        isDefinite: !!definite,
-        timestamp: Date.now()
-      }
-    })
-    
-    console.log('收到字幕:', { text, userId, definite, paragraph })
-  }
-}
