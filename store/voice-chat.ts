@@ -1,8 +1,16 @@
-import { atom } from "jotai"
+'use client'
+
+import { atom, createStore as createJotaiStore } from "jotai"
+import { exportPages } from "next/dist/export/worker"
 import { useEffect } from "react"
 import { create } from "zustand"
+import { shallow } from "zustand/shallow"
 
 export const isChattingAtom = atom(false)
+
+export const curMicVolumeAtom = atom(0)
+
+export const jotaiStore = createJotaiStore()
 
 export interface IMicState {
   isPermissionGranted: boolean
@@ -16,6 +24,8 @@ export interface IMicrophoneManager {
   curMic: () => MediaDeviceInfo | undefined
   initMics: (mics: MediaDeviceInfo[]) => void
   changeMic: (id: string) => void
+  toggleMic: () => void
+  updateVolume: (value: number) => void
 }
 
 export const useMicsStore = create<IMicrophoneManager>((set, get) => ({
@@ -25,6 +35,22 @@ export const useMicsStore = create<IMicrophoneManager>((set, get) => ({
     isPermissionGranted: false,
     isOn: false,
     volume: 0,
+  },
+  toggleMic: () => {
+    set({
+      curMicState: {
+        ...get().curMicState,
+        isOn: !get().curMicState.isOn,
+      },
+    })
+  },
+  updateVolume: (value: number) => {
+    set({
+      curMicState: {
+        ...get().curMicState,
+        volume: value,
+      },
+    })
   },
   curMic: () => {
     return get().mics.find((mic) => mic.deviceId === get().curMicId)
@@ -36,17 +62,7 @@ export const useMicsStore = create<IMicrophoneManager>((set, get) => ({
     }
   },
   changeMic: (id: string) => {
-    set({ curMicId: id })
-    
-    // 重置状态
-    set({ 
-      curMicState: { 
-        isPermissionGranted: false, 
-        isOn: false, 
-        volume: 0 
-      } 
-    })
-    
+    set({ curMicId: id })    
     // 检查麦克风权限并开始监控
     navigator.mediaDevices.getUserMedia({ audio: { deviceId: id } })
       .then((stream) => {
@@ -55,39 +71,12 @@ export const useMicsStore = create<IMicrophoneManager>((set, get) => ({
           curMicState: { 
             ...get().curMicState, 
             isPermissionGranted: true, 
-            isOn: true 
-          } 
-        })
-        
-        const audio = new AudioContext()
-        const source = audio.createMediaStreamSource(stream)
-        const processor = audio.createScriptProcessor(4096, 1, 1)
-        source.connect(processor)
-        processor.connect(audio.destination)
-        
-        processor.onaudioprocess = (e) => {
-          const input = e.inputBuffer.getChannelData(0)
-          const sum = input.reduce((a, b) => a + Math.abs(b), 0)
-          const volume = Math.min(sum / input.length * 10, 1) // 放大并限制在0-1范围
-          console.log({ volume })
-          set({ curMicState: { ...get().curMicState, volume } })
-        }
-        
-        // 存储流引用以便后续清理
-        // TODO: 在组件卸载或切换麦克风时清理资源
-      })
-      .catch((err) => {
-        console.error('Failed to access microphone:', err)
-        set({ 
-          curMicState: { 
-            ...get().curMicState, 
-            isPermissionGranted: false,
-            isOn: false 
           } 
         })
       })
   },
 }))
+
 
 export const useInitMics = () => {
   const { initMics } = useMicsStore()
@@ -105,4 +94,30 @@ export const useInitMics = () => {
         console.error(err)
       })
   }, [])
+}
+
+
+export const useUpdateMicVolume = () => {
+  const { curMicState,  updateVolume} = useMicsStore()
+
+  useEffect(() => {
+    if(!curMicState.isOn) return
+
+    navigator.mediaDevices.getUserMedia({ audio: { deviceId: id } })
+    .then((stream) => {
+    const audio = new AudioContext()
+    const source = audio.createMediaStreamSource(stream)
+    const processor = audio.createScriptProcessor(4096, 1, 1)
+    source.connect(processor)
+    processor.connect(audio.destination)
+    
+    processor.onaudioprocess = (e) => {
+      const input = e.inputBuffer.getChannelData(0)
+      const sum = input.reduce((a, b) => a + Math.abs(b), 0)
+      const volume = Math.min(sum / input.length * 10, 1) // 放大并限制在0-1范围
+      console.log({ volume })
+      updateVolume(volume)
+    }
+  })
+  }, [curMicState.isOn])
 }
