@@ -254,7 +254,9 @@ function handleSubtitleMessage(
   
   if (text) {
     const currentState = get(voiceChatStateAtom)
+    const config = get(rtcConfigAtom)
     
+    // 更新字幕显示
     set(voiceChatStateAtom, {
       ...currentState,
       subtitle: {
@@ -265,8 +267,59 @@ function handleSubtitleMessage(
       }
     })
     
+    // 处理聊天记录
+    if (definite && paragraph) {
+      // 只有当消息完整（definite=true, paragraph=true）时才添加到聊天记录
+      const isUser = userId === config.uid
+      const isAgent = userId?.startsWith('voice_agent_')
+      
+      if (isUser || isAgent) {
+        const messageId = `${userId}-${Date.now()}`
+        const newMessage: ChatMessage = {
+          id: messageId,
+          role: isUser ? 'user' : 'assistant',
+          content: text,
+          timestamp: Date.now(),
+          userId: userId || 'unknown',
+          isComplete: true
+        }
+        
+        // 检查是否已存在相似消息（避免重复）
+        const lastMessage = currentState.chatHistory[currentState.chatHistory.length - 1]
+        const isDuplicate = lastMessage && 
+          lastMessage.userId === userId && 
+          lastMessage.content === text &&
+          (Date.now() - lastMessage.timestamp) < 2000 // 2秒内的相同消息视为重复
+        
+        if (!isDuplicate) {
+          set(voiceChatStateAtom, {
+            ...currentState,
+            subtitle: {
+              text,
+              userId: userId || 'unknown',
+              isDefinite: !!definite,
+              timestamp: Date.now()
+            },
+            chatHistory: [...currentState.chatHistory, newMessage]
+          })
+          
+          console.log('新增聊天记录:', newMessage)
+        }
+      }
+    }
+    
     // console.log('收到字幕:', { text, userId, definite, paragraph })
   }
+}
+
+// 聊天消息类型
+export interface ChatMessage {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+  timestamp: number
+  userId: string
+  isComplete: boolean // 消息是否完整
 }
 
 // RTC 配置
@@ -306,6 +359,7 @@ export interface VoiceChatState {
     isTalking: boolean
     lastUpdate: number
   }
+  chatHistory: ChatMessage[]
 }
 
 export const defaultRTCConfig: RTCConfig = {
@@ -331,7 +385,8 @@ export const voiceChatStateAtom = atom<VoiceChatState>({
   agentUserId: null,
   error: null,
   isStarting: false,
-  isStopping: false
+  isStopping: false,
+  chatHistory: []
 })
 
 // RTC 操作原子
