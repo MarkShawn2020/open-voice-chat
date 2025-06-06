@@ -1,9 +1,9 @@
 "use client"
 
-import { Mics } from "@/components/mic"
+import { useAtom } from "jotai"
+import { MicControl } from "@/components/mic"
 import { Button } from "@/components/ui/button"
 import {isChattingAtom} from "@/store/global";
-import { useAtom } from "jotai"
 
 const Main = () => {
   const [isChatting, setIsChatting] = useAtom(isChattingAtom)
@@ -18,8 +18,8 @@ const Main = () => {
 
 export default function Web() {
   return (
-    <div className="margin-auto flex flex-col items-center gap-2">
-      <Mics />
+    <div className="margin-auto flex flex-col items-center gap-2 p-4">
+      <MicControl />
 
       <Main />
     </div>

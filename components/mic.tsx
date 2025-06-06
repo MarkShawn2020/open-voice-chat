@@ -1,19 +1,36 @@
-import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { useInitMics, useMicActions, useMicStore, useUpdateMicVolume } from "@/store/mic"
 
 export const MicControl = () => {
-  const { curMicState } = useMicStore()
-  const { toggleMic } = useMicActions()
+  const { curMicState, mics, curMicId } = useMicStore()
+  const { toggleMic, changeMic } = useMicActions()
   useUpdateMicVolume()
+  useInitMics()
 
   return (
-    <div className="space-y-3 rounded-lg border bg-gray-50 p-4">
+    <div className="space-y-3 rounded-lg border bg-gray-50 p-4 w-[320px]">
       <h4 className="text-sm font-semibold text-gray-800">Microphone Control</h4>
 
-
-
+      {/* 麦克风选择下拉框 */}
+      {mics.length > 0 && (
+        <div className="space-y-2">
+          <Label className="text-sm text-gray-600">Select Microphone</Label>
+          <Select value={curMicId || ""} onValueChange={changeMic}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Choose a microphone..." />
+            </SelectTrigger>
+            <SelectContent>
+              {mics.map((mic, index) => (
+                <SelectItem key={mic.deviceId} value={mic.deviceId}>
+                  {mic.label || `Microphone ${index + 1}`}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
       {/* 权限状态 */}
       <div className="flex items-center justify-between">
@@ -56,46 +73,6 @@ export const MicControl = () => {
           </div>
         </div>
       )}
-    </div>
-  )
-}
-export const Mics = () => {
-  const { mics, curMicId } = useMicStore()
-  const { changeMic } = useMicActions()
-  useInitMics()
-
-  console.log({ mics, curMicId })
-
-  return (
-    <div className="mx-auto w-full max-w-md space-y-4">
-      <h3 className="text-center text-lg font-semibold">Select Microphone</h3>
-
-      <MicControl />
-
-      <div className="space-y-3">
-        {mics.map((mic, index) => {
-          const isSelected = curMicId === mic.deviceId
-          return (
-            <div key={index} className="space-y-3">
-              <div
-                className={`flex items-center space-x-3 rounded-lg border p-3 transition-colors ${
-                  isSelected ? "border-blue-500 bg-blue-50" : "hover:bg-gray-50"
-                }`}
-              >
-                <Checkbox id={`mic-${index}`} checked={isSelected} onCheckedChange={() => changeMic(mic.deviceId)} />
-                <div className="min-w-0 flex-1">
-                  <Label
-                    htmlFor={`mic-${index}`}
-                    className="block cursor-pointer truncate text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    {mic.label || `Microphone ${index + 1}`}
-                  </Label>
-                </div>
-              </div>
-            </div>
-          )
-        })}
-      </div>
     </div>
   )
 }
