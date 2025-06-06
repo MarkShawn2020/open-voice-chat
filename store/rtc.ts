@@ -161,7 +161,7 @@ function handleRoomBinaryMessageReceived(
     // 首先尝试使用新的字幕解析方法
     const subtitleMessage = MessageParser.parseSubtitleMessage(e.message)
     if (subtitleMessage) {
-      console.log('收到字幕消息:', { userId: e.userId, subtitleMessage })
+      // console.log('收到字幕消息:', { userId: e.userId, subtitleMessage })
       handleSubtitleMessage(subtitleMessage, set, get)
       return
     }
@@ -170,7 +170,7 @@ function handleRoomBinaryMessageReceived(
     const { type, value } = MessageParser.tlv2String(e.message)
     const parsed = JSON.parse(value) as {type: string, data: unknown}
     
-    console.log('收到房间消息:', { userId: e.userId, type, parsed })
+    // console.log('收到房间消息:', { userId: e.userId, type, parsed })
 
     switch (parsed.type as MESSAGE_TYPE) {
       case MESSAGE_TYPE.BRIEF:
@@ -242,6 +242,17 @@ function handleAgentBrief(
 }
 
 // 处理字幕消息
+/**
+ * @description
+ * 1. 不同用户的消息 → 新增
+ * 2. 同一用户，但上一条消息是definite → 新增
+ * 3. 其他情况 → 更新最后一条消息
+ * 
+ * @param parsed 
+ * @param set 
+ * @param get 
+ * @returns 
+ */
 function handleSubtitleMessage(
   parsed: SubtitleMessage, 
   set: Setter, 
@@ -256,17 +267,6 @@ function handleSubtitleMessage(
     const currentState = get(voiceChatStateAtom)
     const config = get(rtcConfigAtom)
     
-    // 更新字幕显示
-    set(voiceChatStateAtom, {
-      ...currentState,
-      subtitle: {
-        text,
-        userId: userId || 'unknown',
-        isDefinite: !!definite,
-        timestamp: Date.now()
-      }
-    })
-    
     // 处理聊天记录 - 支持实时更新
     const isUser = userId === config.uid
     const isAgent = userId?.startsWith('voice_agent_')
@@ -275,15 +275,15 @@ function handleSubtitleMessage(
       const role = isUser ? 'user' : 'assistant'
       const chatHistory = [...currentState.chatHistory]
       
-      // 查找最后一条来自同一用户的消息
-      const lastMessageIndex = chatHistory.length - 1
-      const lastMessage = chatHistory[lastMessageIndex]
-      
+      // 查找最后一条消息
+      const lastMessage = chatHistory[chatHistory.length - 1]
       const isSameUser = lastMessage && lastMessage.userId === userId
-      const isRecentMessage = lastMessage && (Date.now() - lastMessage.timestamp) < 5000 // 5秒内
       
-      if (paragraph) {
-        // 分句完成，总是创建新的聊天记录
+      // 判断是否需要新增聊天记录
+      const shouldCreateNew = !isSameUser || (isSameUser && lastMessage.isDefinite)
+      
+      if (shouldCreateNew) {
+        // 新增聊天记录
         const messageId = `${userId}-${Date.now()}`
         const newMessage: ChatMessage = {
           id: messageId,
@@ -291,41 +291,31 @@ function handleSubtitleMessage(
           content: text,
           timestamp: Date.now(),
           userId: userId || 'unknown',
-          isComplete: !!definite // definite为true时表示完全确定
+          isComplete: !!paragraph,
+          isDefinite: !!definite
         }
         
         // 检查是否已存在相似消息（避免重复）
         const isDuplicate = lastMessage && 
           lastMessage.userId === userId && 
           lastMessage.content === text &&
-          (Date.now() - lastMessage.timestamp) < 2000 // 2秒内的相同消息视为重复
+          (Date.now() - lastMessage.timestamp) < 2000
         
         if (!isDuplicate) {
           chatHistory.push(newMessage)
-          console.log('分句完成，新增聊天记录:', { text, userId, paragraph, definite })
+          console.log('新增聊天记录:', { text, userId, reason: !isSameUser ? '不同用户' : '上条消息已确定' })
         }
-      } else if (isSameUser && isRecentMessage && !lastMessage.isComplete) {
-        // 实时更新最后一条消息（未分句的情况）
+      } else {
+        // 更新最后一条消息
+        const lastMessageIndex = chatHistory.length - 1
         chatHistory[lastMessageIndex] = {
           ...lastMessage,
           content: text,
           timestamp: Date.now(),
-          isComplete: false // 未分句时保持为非完整状态
+          isComplete: !!paragraph,
+          isDefinite: !!definite
         }
-        console.log('实时更新聊天记录:', { text, userId, isUpdating: true })
-      } else if (!isSameUser || !isRecentMessage) {
-        // 添加新的实时消息（来自不同用户或时间间隔较长）
-        const messageId = `${userId}-${Date.now()}`
-        const newMessage: ChatMessage = {
-          id: messageId,
-          role,
-          content: text,
-          timestamp: Date.now(),
-          userId: userId || 'unknown',
-          isComplete: false
-        }
-        chatHistory.push(newMessage)
-        console.log('新用户或新会话，新增实时消息:', { text, userId })
+        console.log('更新聊天记录:', { text, userId, definite, paragraph })
       }
       
       // 更新状态
@@ -338,12 +328,8 @@ function handleSubtitleMessage(
           timestamp: Date.now()
         },
         chatHistory
-      })
-      
-      console.log('更新聊天记录:', { text, userId, definite, paragraph, chatHistoryLength: chatHistory.length })
+      }) 
     }
-    
-    // console.log('收到字幕:', { text, userId, definite, paragraph })
   }
 }
 
@@ -355,6 +341,7 @@ export interface ChatMessage {
   timestamp: number
   userId: string
   isComplete: boolean // 消息是否完整
+  isDefinite: boolean // 消息是否基于确定的语音识别结果
 }
 
 // RTC 配置
