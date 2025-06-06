@@ -79,6 +79,26 @@ export const VoiceCall: React.FC = () => {
     dispatchRtcAction({ type: 'STOP_VOICE_CHAT' })
   }
 
+  // 基于 userId 精准停止特定的 AI智能体
+  const handleStopSpecificVoiceAgent = (userId: string) => {
+    // 从用户ID中提取 taskId (格式: voice_agent_${taskId})
+    const taskId = userId.replace('voice_agent_', '')
+    if (taskId && taskId !== userId) {
+      // 直接调用停止API，而不是通过全局状态
+      import('@/lib/voice-chat-actions').then(({ stopVoiceChat }) => {
+        stopVoiceChat(config.appId, config.roomId, taskId).then((result) => {
+          if (result.success) {
+            console.log(`成功停止智能体 ${taskId}`)
+            // 可以选择性地更新本地状态或重新获取状态
+          } else {
+            console.error(`停止智能体失败: ${result.error}`)
+            dispatchRtcAction({ type: 'SET_ERROR', payload: `停止智能体失败: ${result.error}` })
+          }
+        })
+      })
+    }
+  }
+
   return (
     <div className="mx-auto w-full max-w-md space-y-4">
 
@@ -240,12 +260,36 @@ export const VoiceCall: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {rtcState.remoteUsers.map((userId) => (
-                <div key={userId} className="flex items-center justify-between rounded bg-gray-50 p-2">
-                  <span className="text-sm truncate">{userId}</span>
-                  <span className="text-xs text-green-600 shrink-0">在线</span>
-                </div>
-              ))}
+              {rtcState.remoteUsers.map((userId) => {
+                const isVoiceAgent = userId.startsWith('voice_agent_')
+                const taskId = isVoiceAgent ? userId.replace('voice_agent_', '') : null
+                
+                return (
+                  <div key={userId} className="flex items-center justify-between rounded bg-gray-50 p-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm truncate">{userId}</div>
+                      {isVoiceAgent && taskId && (
+                        <div className="text-xs text-gray-500 font-mono">Task: {taskId.slice(0, 8)}...</div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-xs text-green-600">在线</span>
+                      {isVoiceAgent && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleStopSpecificVoiceAgent(userId)}
+                          className="h-6 px-2 text-xs"
+                          title={`停止智能体 ${taskId}`}
+                        >
+                          <BotOff className="h-3 w-3 mr-1" />
+                          下线
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           </CardContent>
         </Card>
