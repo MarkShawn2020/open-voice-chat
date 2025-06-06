@@ -1,23 +1,27 @@
 "use client"
 
 import { useAtom } from "jotai"
-import { AlertCircle, Mic, MicOff, Phone, PhoneOff, Users } from "lucide-react"
+import { AlertCircle, Bot, BotOff, Mic, MicOff, Phone, PhoneOff, Users } from "lucide-react"
 import React, { useEffect, useState } from "react"
 
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { rtcActionsAtom, RTCConfig, rtcConfigAtom, rtcStateAtom } from "@/store/rtc"
+import { Textarea } from "@/components/ui/textarea"
+import { rtcActionsAtom, rtcConfigAtom, rtcStateAtom, voiceChatStateAtom } from "@/store/rtc"
 
 
 export const VoiceCall: React.FC = () => {
   const [config, setConfig] = useAtom(rtcConfigAtom)
   const [rtcState] = useAtom(rtcStateAtom)
+  const [voiceChatState] = useAtom(voiceChatStateAtom)
   const [, dispatchRtcAction] = useAtom(rtcActionsAtom)
 
-  const [formData, setFormData] = useState<RTCConfig>(config)
+  const [aiConfig, setAiConfig] = useState({
+    systemMessage: '你是一个友好的AI助手，用简洁明了的方式回答问题。',
+    welcomeMessage: '你好！我是你的AI助手，有什么可以帮助你的吗？'
+  })
 
 
 
@@ -28,23 +32,9 @@ export const VoiceCall: React.FC = () => {
     }
   }, [config, rtcState.engine, dispatchRtcAction])
 
-  // 处理配置更新
-  const handleUpdateConfig = () => {
-    if (!formData.appId || !formData.token) {
-      dispatchRtcAction({ type: "SET_ERROR", payload: "AppID 和 Token 不能为空" })
-      return
-    }
-    setConfig(formData)
-    dispatchRtcAction({ type: "CLEAR_ERROR" })
-  }
 
   // 加入房间
   const handleJoinRoom = async () => {
-    if (!config) {
-      handleUpdateConfig()
-      return
-    }
-
     dispatchRtcAction({ type: "JOIN_ROOM" })
 
     // 延迟启动音频采集，确保房间连接成功
@@ -68,64 +58,29 @@ export const VoiceCall: React.FC = () => {
     }
   }
 
-  // 表单输入处理函数
-  const handleFormChange = (field: keyof RTCConfig) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [field]: e.target.value })
+  // AI配置处理函数
+  const handleAiConfigChange = (field: keyof typeof aiConfig) => (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    setAiConfig({ ...aiConfig, [field]: e.target.value })
   }
 
-  console.log(formData)
+  // 启动AI智能体
+  const handleStartVoiceChat = () => {
+    dispatchRtcAction({ 
+      type: 'START_VOICE_CHAT',
+      systemMessage: aiConfig.systemMessage,
+      welcomeMessage: aiConfig.welcomeMessage
+    })
+  }
+
+  // 停止AI智能体
+  const handleStopVoiceChat = () => {
+    dispatchRtcAction({ type: 'STOP_VOICE_CHAT' })
+  }
 
   return (
     <div className="mx-auto w-full max-w-md space-y-4">
-      {/* 配置面板 */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Phone className="h-5 w-5" />
-            语音通话配置
-          </CardTitle>
-          <CardDescription>配置火山引擎RTC参数</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="appId">App ID</Label>
-            <Input
-              id="appId"
-              type="text"
-              placeholder="输入 App ID"
-              value={formData.appId}
-              onChange={handleFormChange("appId")}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="token">Token</Label>
-            <Input
-              id="token"
-              type="text"
-              placeholder="输入 Token"
-              value={formData.token}
-              onChange={handleFormChange("token")}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="roomId">房间ID</Label>
-              <Input id="roomId" type="text" value={formData.roomId} onChange={handleFormChange("roomId")} />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="uid">用户ID</Label>
-              <Input id="uid" type="text" value={formData.uid} onChange={handleFormChange("uid")} />
-            </div>
-          </div>
-
-          <Button onClick={handleUpdateConfig} className="w-full" disabled={rtcState.isConnected}>
-            更新配置
-          </Button>
-        </CardContent>
-      </Card>
 
       {/* 通话控制面板 */}
       <Card>
@@ -193,11 +148,87 @@ export const VoiceCall: React.FC = () => {
         </CardContent>
       </Card>
 
+      {/* AI配置面板 */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Bot className="h-5 w-5" />
+            AI配置
+          </CardTitle>
+          <CardDescription>配置AI智能体参数</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="systemMessage">系统消息</Label>
+            <Textarea
+              id="systemMessage"
+              value={aiConfig.systemMessage}
+              onChange={handleAiConfigChange("systemMessage")}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="welcomeMessage">欢迎消息</Label>
+            <Textarea
+              id="welcomeMessage"
+              value={aiConfig.welcomeMessage}
+              onChange={handleAiConfigChange("welcomeMessage")}
+            />
+          </div>
+
+          {/* AI智能体状态 */}
+          <div className="flex items-center justify-between">
+            <span className="text-sm">AI智能体:</span>
+            <span className={`text-sm font-medium ${voiceChatState.isAgentActive ? "text-green-600" : "text-gray-500"}`}>
+              {voiceChatState.isAgentActive ? "运行中" : "未启动"}
+            </span>
+          </div>
+
+          {voiceChatState.taskId && (
+            <div className="flex items-center justify-between">
+              <span className="text-sm">任务ID:</span>
+              <span className="text-xs text-gray-500 font-mono">{voiceChatState.taskId.slice(0, 8)}...</span>
+            </div>
+          )}
+
+          <div className="flex gap-2">
+            {!voiceChatState.isAgentActive ? (
+              <Button 
+                onClick={handleStartVoiceChat} 
+                className="flex-1"
+                disabled={!rtcState.isConnected || voiceChatState.isStarting}
+              >
+                <Bot className="mr-2 h-4 w-4" />
+                {voiceChatState.isStarting ? "启动中..." : "启动AI智能体"}
+              </Button>
+            ) : (
+              <Button 
+                onClick={handleStopVoiceChat} 
+                className="flex-1" 
+                variant="destructive"
+                disabled={voiceChatState.isStopping}
+              >
+                <BotOff className="mr-2 h-4 w-4" />
+                {voiceChatState.isStopping ? "停止中..." : "停止AI智能体"}
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* 错误提示 */}
       {rtcState.error && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>{rtcState.error}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* AI语音聊天错误提示 */}
+      {voiceChatState.error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>AI智能体错误: {voiceChatState.error}</AlertDescription>
         </Alert>
       )}
 

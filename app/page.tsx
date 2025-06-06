@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { VoiceCall } from "@/components/voice-call"
 import {isChattingAtom} from "@/store/global";
+import { Config } from "@/components/config"
 
 const Main = () => {
   const [isChatting, setIsChatting] = useAtom(isChattingAtom)
@@ -39,12 +40,17 @@ export default function Web() {
       </div>
 
       <Tabs defaultValue="voice-call" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="config">参数配置</TabsTrigger>
           <TabsTrigger value="voice-call">语音通话</TabsTrigger>
           <TabsTrigger value="mic-control">麦克风控制</TabsTrigger>
           <TabsTrigger value="ai-chat">AI对话</TabsTrigger>
         </TabsList>
-        
+
+        <TabsContent value="config" className="mt-6">
+          <Config />
+        </TabsContent>
+                
         <TabsContent value="voice-call" className="mt-6">
           <VoiceCall />
         </TabsContent>
