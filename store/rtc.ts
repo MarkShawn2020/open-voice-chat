@@ -81,7 +81,7 @@ class MessageParser {
       // 检查 magic number "subv" (0x73756276)
       const magicNumber = dataView.getUint32(0, false) // big-endian
       if (magicNumber !== 0x73756276) {
-        console.warn('字幕消息 magic number 不匹配')
+        console.warn('字幕消息 magic number 不匹配', {magicNumber})
         return null
       }
       
@@ -89,7 +89,7 @@ class MessageParser {
       const length = dataView.getUint32(4, false) // big-endian
       
       if (messageBuffer.byteLength < 8 + length) {
-        console.warn('字幕消息长度不匹配')
+        console.warn('字幕消息长度不匹配', {length})
         return null
       }
       

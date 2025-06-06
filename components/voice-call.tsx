@@ -11,20 +11,52 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { ChatMessage, rtcActionsAtom, rtcConfigAtom, rtcStateAtom, voiceChatStateAtom } from "@/store/rtc"
 
+// 时间戳组件
+const TimeStamp: React.FC<{ timestamp: number }> = ({ timestamp }) => {
+  const formatTime = (timestamp: number) => {
+    const date = new Date(timestamp)
+    const now = new Date()
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const messageDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+    
+    if (messageDate.getTime() === today.getTime()) {
+      // 今天：显示时分
+      return date.toLocaleTimeString('zh-CN', { 
+        hour: '2-digit', 
+        minute: '2-digit'
+      })
+    } else if (messageDate.getTime() === today.getTime() - 24 * 60 * 60 * 1000) {
+      // 昨天
+      return `昨天 ${date.toLocaleTimeString('zh-CN', { 
+        hour: '2-digit', 
+        minute: '2-digit'
+      })}`
+    } else {
+      // 更早：显示月日和时分
+      return date.toLocaleString('zh-CN', { 
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit', 
+        minute: '2-digit'
+      })
+    }
+  }
+
+  return (
+    <div className="flex justify-center my-4">
+      <span className="text-xs text-gray-400 bg-gray-50 px-3 py-1 rounded-full">
+        {formatTime(timestamp)}
+      </span>
+    </div>
+  )
+}
+
 // 聊天消息组件
 const ChatMessageItem: React.FC<{ message: ChatMessage }> = ({ message }) => {
   const [, dispatchRtcAction] = useAtom(rtcActionsAtom)
   const isUser = message.role === 'user'
   const [showContextMenu, setShowContextMenu] = useState(false)
   const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 })
-  
-  const formatTime = (timestamp: number) => {
-    return new Date(timestamp).toLocaleTimeString('zh-CN', { 
-      hour: '2-digit', 
-      minute: '2-digit',
-      second: '2-digit'
-    })
-  }
 
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -51,26 +83,16 @@ const ChatMessageItem: React.FC<{ message: ChatMessage }> = ({ message }) => {
   return (
     <>
       <div 
-        className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-3`}
+        className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-2`}
         onContextMenu={handleContextMenu}
       >
-        <div className={`max-w-[80%] rounded-lg px-3 py-2 cursor-pointer select-text ${
+        <div className={`max-w-[75%] rounded-2xl px-3 py-2 cursor-pointer select-text relative ${
           isUser 
             ? `bg-blue-500 text-white ${!message.isComplete ? 'opacity-70' : ''}` 
-            : `bg-gray-100 text-gray-900 ${!message.isComplete ? 'opacity-70' : ''}`
+            : `bg-white border text-gray-900 ${!message.isComplete ? 'opacity-70' : ''}`
         }`}>
-          <div className="text-sm break-words">{message.content}</div>
-          <div className={`text-xs mt-1 opacity-70 flex items-center gap-1 ${
-            isUser ? 'text-blue-100' : 'text-gray-500'
-          }`}>
-            {formatTime(message.timestamp)}
-            {!message.isComplete && (
-              <span className="text-xs">实时</span>
-            )}
-            {!message.isDefinite && (
-              <span className="text-xs">·临时</span>
-            )}
-          </div>
+          <div className="text-sm break-words leading-relaxed">{message.content}</div>
+          
         </div>
       </div>
       
@@ -80,12 +102,12 @@ const ChatMessageItem: React.FC<{ message: ChatMessage }> = ({ message }) => {
           className="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[120px]"
           style={{ left: contextMenuPosition.x, top: contextMenuPosition.y }}
         >
-          <button
+          <Button
             onClick={handleDeleteMessage}
             className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
           >
             🗑️ 删除消息
-          </button>
+          </Button>
         </div>
       )}
     </>
@@ -96,6 +118,15 @@ const ChatMessageItem: React.FC<{ message: ChatMessage }> = ({ message }) => {
 const ChatHistory: React.FC<{ messages: ChatMessage[] }> = ({ messages }) => {
   const [, dispatchRtcAction] = useAtom(rtcActionsAtom)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
+  
+  // 时间间隔阈值（30秒）
+  const TIME_THRESHOLD = 30 * 1000
+
+  // 判断是否需要显示时间戳
+  const shouldShowTimestamp = (currentMessage: ChatMessage, previousMessage?: ChatMessage) => {
+    if (!previousMessage) return true // 第一条消息总是显示时间
+    return currentMessage.timestamp - previousMessage.timestamp > TIME_THRESHOLD
+  }
 
   // 自动滚动到底部
   useEffect(() => {
@@ -119,36 +150,41 @@ const ChatHistory: React.FC<{ messages: ChatMessage[] }> = ({ messages }) => {
               <MessageCircle className="h-4 w-4" />
               聊天记录
             </CardTitle>
-            <CardDescription className="text-sm">
+            <CardDescription className="text-sm" suppressHydrationWarning>
               实时对话记录 ({messages.length} 条消息)
             </CardDescription>
           </div>
-          {messages.length > 0 && (
+
             <Button 
               variant="ghost" 
               size="sm"
               onClick={handleClearHistory}
               className="text-gray-500 hover:text-red-500 p-1 h-auto"
               title="清除聊天记录"
+              disabled={messages.length === 0}
             >
               🗑️
             </Button>
-          )}
         </div>
       </CardHeader>
       <CardContent className="flex-1 p-0">
         <div 
           ref={scrollAreaRef}
-          className="h-full px-4 pb-4 overflow-y-auto"
+          className="h-full px-4 pb-4 overflow-y-auto bg-gray-50"
         >
           {messages.length === 0 ? (
             <div className="flex items-center justify-center h-32 text-gray-500 text-sm">
               暂无对话记录
             </div>
           ) : (
-            <div className="space-y-1">
-              {messages.map((message) => (
-                <ChatMessageItem key={message.id} message={message} />
+            <div className="py-2" suppressHydrationWarning>
+              {messages.map((message, index) => (
+                <React.Fragment key={message.id}>
+                  {shouldShowTimestamp(message, messages[index - 1]) && (
+                    <TimeStamp timestamp={message.timestamp} />
+                  )}
+                  <ChatMessageItem message={message} />
+                </React.Fragment>
               ))}
             </div>
           )}
