@@ -33,4 +33,5 @@ storybook-static/
 /playwright-report/
 /playwright/.cache/
 
-/.npm-only-allow
+/.npm-only-allow.env
+.env
