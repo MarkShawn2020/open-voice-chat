@@ -118,6 +118,7 @@ const ChatMessageItem: React.FC<{ message: ChatMessage }> = ({ message }) => {
 const ChatHistory: React.FC<{ messages: ChatMessage[] }> = ({ messages }) => {
   const [, dispatchRtcAction] = useAtom(rtcActionsAtom)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
+  const [isHydrated, setIsHydrated] = useState(false)
   
   // 时间间隔阈值（30秒）
   const TIME_THRESHOLD = 30 * 1000
@@ -127,6 +128,11 @@ const ChatHistory: React.FC<{ messages: ChatMessage[] }> = ({ messages }) => {
     if (!previousMessage) return true // 第一条消息总是显示时间
     return currentMessage.timestamp - previousMessage.timestamp > TIME_THRESHOLD
   }
+
+  // 处理hydration
+  useEffect(() => {
+    setIsHydrated(true)
+  }, [])
 
   // 自动滚动到底部
   useEffect(() => {
@@ -141,6 +147,9 @@ const ChatHistory: React.FC<{ messages: ChatMessage[] }> = ({ messages }) => {
     }
   }
 
+  // 只在hydration完成后显示实际的消息
+  const displayMessages = isHydrated ? messages : []
+
   return (
     <Card className="h-full flex flex-col">
       <CardHeader className="pb-3">
@@ -150,8 +159,8 @@ const ChatHistory: React.FC<{ messages: ChatMessage[] }> = ({ messages }) => {
               <MessageCircle className="h-4 w-4" />
               聊天记录
             </CardTitle>
-            <CardDescription className="text-sm" suppressHydrationWarning>
-              实时对话记录 ({messages.length} 条消息)
+            <CardDescription className="text-sm">
+              实时对话记录 ({displayMessages.length} 条消息)
             </CardDescription>
           </div>
 
@@ -161,7 +170,7 @@ const ChatHistory: React.FC<{ messages: ChatMessage[] }> = ({ messages }) => {
               onClick={handleClearHistory}
               className="text-gray-500 hover:text-red-500 p-1 h-auto"
               title="清除聊天记录"
-              disabled={messages.length === 0}
+              disabled={displayMessages.length === 0}
             >
               🗑️
             </Button>
@@ -172,15 +181,15 @@ const ChatHistory: React.FC<{ messages: ChatMessage[] }> = ({ messages }) => {
           ref={scrollAreaRef}
           className="h-full px-4 pb-4 overflow-y-auto bg-gray-50"
         >
-          {messages.length === 0 ? (
+          {displayMessages.length === 0 ? (
             <div className="flex items-center justify-center h-32 text-gray-500 text-sm">
               暂无对话记录
             </div>
           ) : (
-            <div className="py-2" suppressHydrationWarning>
-              {messages.map((message, index) => (
+            <div className="py-2">
+              {displayMessages.map((message, index) => (
                 <React.Fragment key={message.id}>
-                  {shouldShowTimestamp(message, messages[index - 1]) && (
+                  {shouldShowTimestamp(message, displayMessages[index - 1]) && (
                     <TimeStamp timestamp={message.timestamp} />
                   )}
                   <ChatMessageItem message={message} />
