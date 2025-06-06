@@ -82,7 +82,7 @@ class MessageParser {
       const magicNumber = dataView.getUint32(0, false) // big-endian
       if (magicNumber !== 0x73756276) {
         console.warn('字幕消息 magic number 不匹配', {magicNumber})
-        return null
+        // return null // todo: 兼容处理
       }
       
       // 读取消息长度
@@ -90,7 +90,7 @@ class MessageParser {
       
       if (messageBuffer.byteLength < 8 + length) {
         console.warn('字幕消息长度不匹配', {length})
-        return null
+        // return null // todo: 兼容处理
       }
       
       // 提取字幕消息内容
