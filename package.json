@@ -1,8 +1,16 @@
 {
   "name": "open-voice-chat",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Open source real-time voice chat application powered by ByteDance Doubao AI",
-  "keywords": ["voice-chat", "ai", "real-time", "webrtc", "doubao", "speech-recognition", "text-to-speech"],
+  "keywords": [
+    "voice-chat",
+    "ai",
+    "real-time",
+    "webrtc",
+    "doubao",
+    "speech-recognition",
+    "text-to-speech"
+  ],
   "author": {
     "name": "Mark Shawn",
     "email": "markshawn2020@outlook.com",
