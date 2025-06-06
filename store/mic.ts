@@ -13,16 +13,19 @@ export interface IMicrophoneManager {
   mics: MediaDeviceInfo[]
   curMicId: string | null
   curMicState: IMicState
+  isInitialized: boolean
   curMic: () => MediaDeviceInfo | undefined
   initMics: (mics: MediaDeviceInfo[]) => void
   changeMic: (id: string) => void
   toggleMic: () => void
   updateVolume: (value: number) => void
+  _initializeMics: () => Promise<void>
 }
 
 export const useMicsStore = create<IMicrophoneManager>((set, get) => ({
   mics: [],
   curMicId: null,
+  isInitialized: false,
   curMicState: {
     isPermissionGranted: false,
     isOn: false,
@@ -48,7 +51,7 @@ export const useMicsStore = create<IMicrophoneManager>((set, get) => ({
     return get().mics.find((mic) => mic.deviceId === get().curMicId)
   },
   initMics: (mics: MediaDeviceInfo[]) => {
-    set({ mics })
+    set({ mics, isInitialized: true })
     if (mics.length > 0) {
       get().changeMic(mics[0]!.deviceId)
     }
@@ -66,28 +69,30 @@ export const useMicsStore = create<IMicrophoneManager>((set, get) => ({
       })
     })
   },
+  _initializeMics: async () => {
+    if (get().isInitialized) return
+    
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices()
+      const mics = devices.filter((device) => device.kind === "audioinput")
+      get().initMics(mics)
+    } catch (err) {
+      console.error("Failed to initialize microphones:", err)
+    }
+  },
 }))
 
-export const useInitMics = () => {
-  const { initMics } = useMicsStore()
-
+// 自动初始化 Hook - 替代原来的 useInitMics
+export const useMicStore = () => {
+  const store = useMicsStore()
+  const { curMicState, updateVolume, curMicId } = store
+  
+  // 自动初始化麦克风列表
   useEffect(() => {
-    // 获得浏览器所有的麦克风列表，以初始化
-    navigator.mediaDevices
-      .enumerateDevices()
-      .then((devices) => {
-        const mics = devices.filter((device) => device.kind === "audioinput")
-        initMics(mics)
-      })
-      .catch((err) => {
-        console.error(err)
-      })
+    store._initializeMics()
   }, [])
-}
-
-export const useUpdateMicVolume = () => {
-  const { curMicState, updateVolume, curMicId } = useMicsStore()
-
+  
+  // 自动处理音量监控 - 集成原来的 useUpdateMicVolume 功能
   useEffect(() => {
     if (!curMicState.isOn || !curMicId) return
 
@@ -149,4 +154,6 @@ export const useUpdateMicVolume = () => {
       }
     }
   }, [curMicState.isOn, curMicId, updateVolume])
+  
+  return store
 }

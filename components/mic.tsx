@@ -1,12 +1,10 @@
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
-import { useInitMics, useMicsStore, useUpdateMicVolume } from "@/store/mic"
+import { useMicStore } from "@/store/mic"
 
 export const CurMicVolume = () => {
-  const { curMicState, toggleMic } = useMicsStore()
-
-  useUpdateMicVolume()
+  const { curMicState, toggleMic } = useMicStore()
 
   return (
     <div className="space-y-3 rounded-lg border bg-gray-50 p-4">
@@ -57,9 +55,7 @@ export const CurMicVolume = () => {
   )
 }
 export const Mics = () => {
-  const { mics, changeMic, curMicId } = useMicsStore()
-
-  useInitMics()
+  const { mics, changeMic, curMicId } = useMicStore()
 
   console.log({ mics, curMicId })
 
