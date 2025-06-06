@@ -1,4 +1,3 @@
-
 # [Next.js Enterprise Boilerplate](https://blazity.com/open-source/nextjs-enterprise-boilerplate) 
 
 A production-ready template for building enterprise applications with Next.js. This boilerplate provides a solid foundation with carefully selected technologies and ready-to-go infrastructure to help you develop high-quality applications efficiently.
@@ -19,6 +18,10 @@ While most Next.js boilerplates focus on individual developer needs with excessi
 > **Blazity** is a group of Next.js architects. We help organizations architect, optimize, and deploy high-performance Next.js applications at scale. Contact us at [contact@blazity.com](https://blazity.com) if you’d like to talk about your project.
 
 
+
+## 项目文档
+
+- [UI布局最佳实践](./docs/UI_LAYOUT_BEST_PRACTICES.md) - 页面布局设计原则和实践经验
 
 ## Documentation
 
