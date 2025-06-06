@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+  # ================================
+  # Open Voice Chat Application
+  # ================================
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
+    container_name: open-voice-chat
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+    env_file:
+      - .env.local
+    volumes:
+      # Mount configuration files
+      - ./next.config.js:/app/next.config.js:ro
+    networks:
+      - app-network
+    depends_on:
+      - redis
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.open-voice-chat.rule=Host(`localhost`)"
+      - "traefik.http.routers.open-voice-chat.entrypoints=web"
+      - "traefik.http.services.open-voice-chat.loadbalancer.server.port=3000"
+
+  # ================================
+  # Redis for Session Storage
+  # ================================
+  redis:
+    image: redis:7-alpine
+    container_name: open-voice-chat-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+      - ./redis.conf:/usr/local/etc/redis/redis.conf:ro
+    command: redis-server /usr/local/etc/redis/redis.conf
+    networks:
+      - app-network
+    labels:
+      - "traefik.enable=false"
+
+  # ================================
+  # Reverse Proxy (Optional)
+  # ================================
+  traefik:
+    image: traefik:v2.10
+    container_name: open-voice-chat-proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "8080:8080"  # Traefik dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik.yml:/etc/traefik/traefik.yml:ro
+    networks:
+      - app-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dashboard.rule=Host(`traefik.localhost`)"
+      - "traefik.http.routers.dashboard.service=api@internal"
+
+# ================================
+# Networks
+# ================================
+networks:
+  app-network:
+    driver: bridge
+    labels:
+      - "com.docker.network.description=Open Voice Chat application network"
+
+# ================================
+# Volumes
+# ================================
+volumes:
+  redis_data:
+    driver: local
+    labels:
+      - "com.docker.volume.description=Redis data storage for Open Voice Chat"

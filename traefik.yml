@@ -1,0 +1,55 @@
+# Traefik configuration for Open Voice Chat
+
+# Global Configuration
+global:
+  checkNewVersion: false
+  sendAnonymousUsage: false
+
+# API and Dashboard Configuration
+api:
+  dashboard: true
+  insecure: true  # Set to false in production
+
+# Entry Points
+entryPoints:
+  web:
+    address: ":80"
+  websecure:
+    address: ":443"
+
+# Provider Configuration
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+    network: "open-voice-chat_app-network"
+
+# Certificate Resolvers (for production HTTPS)
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      email: admin@markshawn.dev
+      storage: acme.json
+      httpChallenge:
+        entryPoint: web
+
+# Logging
+log:
+  level: INFO
+  format: json
+
+accessLog:
+  format: json
+
+# Metrics (optional)
+metrics:
+  prometheus:
+    buckets:
+      - 0.1
+      - 0.3
+      - 1.2
+      - 5.0
+
+# Ping endpoint for health checks
+ping:
+  entryPoint: "web"

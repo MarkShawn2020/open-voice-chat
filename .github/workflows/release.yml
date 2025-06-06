@@ -1,0 +1,283 @@
+name: 🚀 Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v1.0.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  # ===============================
+  # Pre-release Validation
+  # ===============================
+  validate:
+    name: 🔍 Validate Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.github/nodejs.version'
+          cache: 'pnpm'
+
+      - name: 📦 Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+          run_install: false
+
+      - name: 📥 Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: 🔍 Extract version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION="${GITHUB_REF#refs/tags/}"
+          fi
+          echo "version=${VERSION#v}" >> $GITHUB_OUTPUT
+          echo "tag=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Release version: ${VERSION}"
+
+      - name: 🧪 Run all tests
+        run: |
+          pnpm lint
+          pnpm type-check
+          pnpm test --passWithNoTests
+          pnpm build
+
+      - name: 📊 Generate build stats
+        run: |
+          pnpm analyze --output-file=bundle-analysis.txt || true
+          
+      - name: 📤 Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts
+          path: |
+            .next/
+            out/
+            bundle-analysis.txt
+          retention-days: 30
+
+  # ===============================
+  # Create GitHub Release
+  # ===============================
+  release:
+    name: 🏷️ Create Release
+    runs-on: ubuntu-latest
+    needs: validate
+    timeout-minutes: 10
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 📝 Generate release notes
+        id: release-notes
+        run: |
+          # Extract changelog section for this version
+          VERSION="${{ needs.validate.outputs.version }}"
+          
+          # Create release notes
+          echo "## 🎉 Open Voice Chat ${{ needs.validate.outputs.tag }}" > release-notes.md
+          echo "" >> release-notes.md
+          echo "### What's New" >> release-notes.md
+          echo "" >> release-notes.md
+          
+          # Extract from CHANGELOG.md if it exists
+          if [ -f "CHANGELOG.md" ]; then
+            # Try to extract the section for this version
+            awk '/^## \['"${VERSION}"'\]/{flag=1; next} /^## \[/{flag=0} flag' CHANGELOG.md >> release-notes.md || true
+          fi
+          
+          # Add installation instructions
+          echo "" >> release-notes.md
+          echo "### 🚀 Quick Start" >> release-notes.md
+          echo "" >> release-notes.md
+          echo "\`\`\`bash" >> release-notes.md
+          echo "# Clone the repository" >> release-notes.md
+          echo "git clone https://github.com/markshawn2020/open-voice-chat.git" >> release-notes.md
+          echo "cd open-voice-chat" >> release-notes.md
+          echo "" >> release-notes.md
+          echo "# Install dependencies" >> release-notes.md
+          echo "pnpm install" >> release-notes.md
+          echo "" >> release-notes.md
+          echo "# Set up environment variables" >> release-notes.md
+          echo "cp .env.example .env.local" >> release-notes.md
+          echo "# Edit .env.local with your API keys" >> release-notes.md
+          echo "" >> release-notes.md
+          echo "# Start development server" >> release-notes.md
+          echo "pnpm dev" >> release-notes.md
+          echo "\`\`\`" >> release-notes.md
+          echo "" >> release-notes.md
+          echo "### 📚 Documentation" >> release-notes.md
+          echo "" >> release-notes.md
+          echo "- 📖 [Getting Started Guide](./docs/getting-started.md)" >> release-notes.md
+          echo "- 🤝 [Contributing Guidelines](./CONTRIBUTING.md)" >> release-notes.md
+          echo "- 🔒 [Security Policy](./SECURITY.md)" >> release-notes.md
+          echo "- 📋 [Full Changelog](./CHANGELOG.md)" >> release-notes.md
+          echo "" >> release-notes.md
+          echo "### 🙏 Contributors" >> release-notes.md
+          echo "" >> release-notes.md
+          echo "Thank you to all contributors who made this release possible!" >> release-notes.md
+          echo "" >> release-notes.md
+          echo "### 🔗 Links" >> release-notes.md
+          echo "" >> release-notes.md
+          echo "- 🌐 [Live Demo](https://open-voice-chat.vercel.app)" >> release-notes.md
+          echo "- 💬 [Discord Community](https://discord.gg/open-voice-chat)" >> release-notes.md
+          echo "- 🐛 [Report Issues](https://github.com/markshawn2020/open-voice-chat/issues)" >> release-notes.md
+          echo "- 💡 [Feature Requests](https://github.com/markshawn2020/open-voice-chat/issues/new?template=feature_request.yml)" >> release-notes.md
+
+      - name: 🏷️ Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.validate.outputs.tag }}
+          name: "Open Voice Chat ${{ needs.validate.outputs.tag }}"
+          body_path: release-notes.md
+          draft: false
+          prerelease: ${{ contains(needs.validate.outputs.tag, '-') }}
+          generate_release_notes: true
+          files: |
+            bundle-analysis.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ===============================
+  # Deploy to Vercel
+  # ===============================
+  deploy:
+    name: 🌐 Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [validate, release]
+    timeout-minutes: 10
+    environment: production
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🚀 Deploy to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--prod'
+          working-directory: ./
+
+  # ===============================
+  # Notify Community
+  # ===============================
+  notify:
+    name: 📢 Notify Community
+    runs-on: ubuntu-latest
+    needs: [validate, release, deploy]
+    if: always() && needs.release.result == 'success'
+    
+    steps:
+      - name: 📢 Post to Discord
+        if: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        uses: Ilshidur/action-discord@master
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        with:
+          args: |
+            🎉 **Open Voice Chat ${{ needs.validate.outputs.tag }} Released!**
+            
+            🚀 What's new in this release:
+            - New features and improvements
+            - Bug fixes and performance optimizations
+            - Enhanced documentation and developer experience
+            
+            🔗 **Links:**
+            - 📦 [GitHub Release](https://github.com/markshawn2020/open-voice-chat/releases/tag/${{ needs.validate.outputs.tag }})
+            - 🌐 [Live Demo](https://open-voice-chat.vercel.app)
+            - 📖 [Getting Started](https://github.com/markshawn2020/open-voice-chat/blob/main/docs/getting-started.md)
+            
+            Happy coding! 🎙️
+
+      - name: 📢 Create Discussion Post
+        uses: abirismyname/create-discussion@v1.2.0
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          title: "🎉 Release ${{ needs.validate.outputs.tag }} Discussion"
+          body: |
+            ## 🎉 Open Voice Chat ${{ needs.validate.outputs.tag }} is now available!
+            
+            This release brings exciting new features and improvements to our real-time AI voice conversation platform.
+            
+            ### 🚀 Quick Links
+            - 📦 [Release Notes](https://github.com/markshawn2020/open-voice-chat/releases/tag/${{ needs.validate.outputs.tag }})
+            - 🌐 [Try it now](https://open-voice-chat.vercel.app)
+            - 📖 [Documentation](https://github.com/markshawn2020/open-voice-chat/tree/main/docs)
+            
+            ### 💬 Share Your Experience
+            - Have you tried the new features?
+            - Any feedback or suggestions?
+            - Found any issues? Please [report them](https://github.com/markshawn2020/open-voice-chat/issues/new/choose)
+            
+            ### 🤝 Get Involved
+            - ⭐ Star the repository if you find it useful
+            - 🐛 Report bugs or request features
+            - 🤝 Contribute to the project
+            - 💬 Join our [Discord community](https://discord.gg/open-voice-chat)
+            
+            Thank you for being part of the Open Voice Chat community! 🙏
+          repository-id: ${{ github.repository }}
+          category-name: "Announcements"
+
+  # ===============================
+  # Update Documentation
+  # ===============================
+  update-docs:
+    name: 📚 Update Documentation
+    runs-on: ubuntu-latest
+    needs: [validate, release]
+    if: needs.release.result == 'success'
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 📝 Update version in README
+        run: |
+          VERSION="${{ needs.validate.outputs.version }}"
+          sed -i "s/version-[0-9]\+\.[0-9]\+\.[0-9]\+/version-${VERSION}/g" README.md
+          sed -i "s/v[0-9]\+\.[0-9]\+\.[0-9]\+/v${VERSION}/g" README.md
+
+      - name: 💾 Commit version updates
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add README.md
+          git diff --staged --quiet || git commit -m "docs: update version to ${{ needs.validate.outputs.tag }}"
+          git push

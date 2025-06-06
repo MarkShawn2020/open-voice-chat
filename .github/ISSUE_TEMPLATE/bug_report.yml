@@ -1,0 +1,156 @@
+name: 🐛 Bug Report
+description: Report a bug or issue with Open Voice Chat
+title: "[Bug]: "
+labels: ["bug", "needs-triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for taking the time to report a bug! Please fill out this form as completely as possible.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-flight checklist
+      options:
+        - label: I have searched existing issues and this is not a duplicate
+          required: true
+        - label: I have read the documentation and troubleshooting guide
+          required: true
+        - label: I am using a supported browser (Chrome 90+, Firefox 88+, Safari 14+, Edge 90+)
+          required: true
+
+  - type: textarea
+    id: bug-description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is.
+      placeholder: Describe what happened...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction-steps
+    attributes:
+      label: Steps to Reproduce
+      description: Tell us how to reproduce this bug
+      placeholder: |
+        1. Go to '...'
+        2. Click on '...'
+        3. Scroll down to '...'
+        4. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+      placeholder: Describe what you expected to happen...
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: Actual Behavior
+      description: What actually happened?
+      placeholder: Describe what actually happened...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      description: How severe is this bug?
+      options:
+        - Critical (Application crashes or unusable)
+        - High (Major feature broken)
+        - Medium (Feature partially broken)
+        - Low (Minor issue or cosmetic)
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: What version of Open Voice Chat are you using?
+      placeholder: "1.0.0-beta.1"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: browser
+    attributes:
+      label: Browser
+      description: Which browser are you using?
+      options:
+        - Chrome
+        - Firefox
+        - Safari
+        - Edge
+        - Other (specify in additional context)
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating System
+      description: What operating system are you using?
+      placeholder: "macOS 13.0, Windows 11, Ubuntu 22.04"
+    validations:
+      required: true
+
+  - type: textarea
+    id: console-logs
+    attributes:
+      label: Console Logs
+      description: Please include any relevant console logs (press F12 → Console tab)
+      placeholder: Paste console output here...
+      render: text
+
+  - type: textarea
+    id: network-info
+    attributes:
+      label: Network Information
+      description: Any relevant network information (if the issue is related to connectivity)
+      placeholder: |
+        - Connection type: WiFi/Ethernet/Mobile
+        - Approximate speed: XX Mbps
+        - Any firewall or proxy settings
+      render: text
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots/Videos
+      description: If applicable, add screenshots or screen recordings to help explain the problem
+      placeholder: Drag and drop files here or paste URLs...
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Add any other context about the problem here
+      placeholder: Any additional information that might be relevant...
+
+  - type: checkboxes
+    id: workaround
+    attributes:
+      label: Workaround
+      options:
+        - label: I have found a workaround for this issue
+        - label: This issue is blocking me from using the application
+
+  - type: input
+    id: contact
+    attributes:
+      label: Contact Information (Optional)
+      description: If you'd like us to follow up with you directly
+      placeholder: your.email@example.com

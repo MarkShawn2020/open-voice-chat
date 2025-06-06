@@ -1,0 +1,42 @@
+# Configuration for auto-assignment of reviewers and assignees
+
+# A list of reviewers to be added to pull requests (GitHub user name)
+reviewers:
+  - markshawn2020
+
+# A list of keywords to be skipped the process if PR's title include it
+skipKeywords:
+  - wip
+  - "[WIP]"
+  - "[Draft]"
+  - draft
+
+# A number of reviewers added to the pull request
+# Set 0 to add all the reviewers (default: 0)
+numberOfReviewers: 1
+
+# A number of assignees added to the pull request
+# Set to 0 to add all the assignees.
+# Uses numberOfReviewers if unset.
+numberOfAssignees: 1
+
+# A list of assignees, overrides reviewers if set
+assignees:
+  - markshawn2020
+
+# A number of assignees added to the pull request
+# Set to 0 to add all the assignees.
+# Uses numberOfReviewers if unset.
+numberOfAssignees: 1
+
+# Set to true to add reviewers to draft pull requests (default: false)
+addReviewers: true
+
+# Set to true to add assignees to draft pull requests (default: false)
+addAssignees: true
+
+# Set to true to add assignees from different projects to pull requests (default: false)
+addAssigneesFromDifferentProject: false
+
+# Set to true to run the action on draft pull requests (default: false)
+runOnDraft: true
