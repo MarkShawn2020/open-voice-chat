@@ -24,8 +24,10 @@ export const useMicsStore = create<IMicrophoneManager>((set, get) => ({
     return get().mics.find((mic) => mic.deviceId === get().curMicId)
   },
   initMics: (mics: IMicrophone[]) => {
-    console.log("init mics", mics)
     set({ mics })
+    if(mics.length > 0) {
+      set({ curMicId: mics[0]!.deviceId })
+    }
   },
   changeMic: (id: string) => {
     set({ curMicId: id })
@@ -36,8 +38,6 @@ export const useInitMics = () => {
   const { initMics } = useMicsStore()
 
   useEffect(() => {
-    console.log("init mics")
-
     // 获得浏览器所有的麦克风列表，以初始化
     navigator.mediaDevices
       .enumerateDevices()
