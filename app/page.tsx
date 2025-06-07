@@ -1,12 +1,12 @@
 "use client"
 
+import {isChattingAtom} from "@/store/app-state";
 import { useAtom } from "jotai"
 import { MessageCircle, Sparkles } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { isChattingAtom } from "@/store/global"
 
 export default function Web() {
   const [isChatting] = useAtom(isChattingAtom)

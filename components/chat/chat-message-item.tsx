@@ -1,6 +1,9 @@
 // 聊天消息组件
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@/components/ui/context-menu"
-import { ChatMessage, rtcActionsAtom } from "@/store/rtc"
+
+
+import { rtcActionsAtom } from "@/store/rtc-actions"
+import { ChatMessage } from "@/store/voice-chat-state"
 import { useAtom } from "jotai/index"
 import { Trash2 } from "lucide-react"
 import React from "react"

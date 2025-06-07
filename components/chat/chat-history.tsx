@@ -3,7 +3,10 @@ import { ChatMessageItem } from "@/components/chat/chat-message-item"
 import { TimeStamp } from "@/components/chat/chat-timestamp"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ChatMessage, rtcActionsAtom } from "@/store/rtc"
+
+
+import { rtcActionsAtom } from "@/store/rtc-actions"
+import { ChatMessage } from "@/store/voice-chat-state"
 import { useAtom } from "jotai/index"
 import { MessageCircle } from "lucide-react"
 import React, { useEffect, useRef, useState } from "react"

@@ -1,5 +1,5 @@
 // 配置验证函数
-import { AppConfig } from "@/store/rtc"
+import { AppConfig } from "@/store/app-config"
 
 export const validateConfig = (config: AppConfig) => {
   const errors: string[] = []
