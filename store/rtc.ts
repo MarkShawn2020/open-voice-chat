@@ -4,6 +4,7 @@ import VERTC, { IRTCEngine, MediaType, RoomProfileType } from '@volcengine/rtc'
 import { atom } from 'jotai'
 import type { Getter, Setter } from 'jotai'
 import { atomWithStorage } from "jotai/utils"
+import { set as lodashSet } from 'lodash'
 
 import { startVoiceChat, stopVoiceChat } from '@/lib/voice-chat-actions'
 
@@ -482,7 +483,9 @@ export const voiceChatStateAtom = atomWithStorage<VoiceChatState>("voiceChatStat
   isStarting: false,
   isStopping: false,
   chatHistory: []
-}, undefined, {getOnInit: true})
+}, undefined, {
+  // avoid hydration error
+  getOnInit: false})
 
 // RTC 操作原子
 export const rtcActionsAtom = atom(null, (get: Getter, set: Setter, action: RTCAction) => {
@@ -751,6 +754,15 @@ export const rtcActionsAtom = atom(null, (get: Getter, set: Setter, action: RTCA
       console.log('清除错误')
       set(rtcStateAtom, { ...state, error: null })
       break
+
+    case 'BIND_KEY':
+      const { key, value } = action.payload
+      set(appConfigAtom, (prev) => {
+        const newConfig = { ...prev }
+        lodashSet(newConfig, key, value)
+        return newConfig
+      })
+      break
   }
 })
 
@@ -767,3 +779,4 @@ export type RTCAction =
   | { type: 'CLEAR_CHAT_HISTORY' }
   | { type: 'SET_ERROR'; payload: string }
   | { type: 'CLEAR_ERROR' }
+  | {type: "BIND_KEY", payload: {key: string, value: string}}

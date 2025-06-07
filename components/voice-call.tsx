@@ -135,7 +135,7 @@ export const VoiceCall: React.FC = () => {
 
                 <div className="flex items-center justify-between">
                   <span>AI智能体:</span>
-                  <span className={`font-medium ${voiceChatState.isAgentActive ? "text-green-600" : "text-gray-500"}`}>
+                  <span className={`font-medium ${voiceChatState.isAgentActive ? "text-green-600" : "text-gray-500"}`} suppressHydrationWarning>
                     {voiceChatState.isAgentActive ? "运行中" : "未启动"}
                   </span>
                 </div>
