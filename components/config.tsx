@@ -195,7 +195,7 @@ export const Config: React.FC = () => {
       <ConfigStatus errors={configErrors} />
 
       <Tabs defaultValue="rtc" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="rtc" className="flex items-center gap-2">
             <Server className="h-4 w-4" />
             <span className="hidden sm:inline">RTC</span>
@@ -207,10 +207,6 @@ export const Config: React.FC = () => {
           <TabsTrigger value="llm" className="flex items-center gap-2">
             <Brain className="h-4 w-4" />
             <span className="hidden sm:inline">大模型</span>
-          </TabsTrigger>
-          <TabsTrigger value="control" className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            <span className="hidden sm:inline">控制</span>
           </TabsTrigger>
         </TabsList>
 
@@ -465,60 +461,6 @@ export const Config: React.FC = () => {
               />
             </CardContent>
           </Card>
-        </TabsContent>
-
-        {/* 控制面板 */}
-        <TabsContent value="control" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Settings className="h-5 w-5" />
-                  配置管理
-                </CardTitle>
-                <CardDescription>保存和管理您的配置</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <Badge variant={isConfigComplete ? "default" : "secondary"}>
-                    {isConfigComplete ? "完整" : "未完成"}
-                  </Badge>
-                  <span className="text-muted-foreground text-sm">配置状态</span>
-                </div>
-
-                {!isConfigComplete && (
-                  <Alert>
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>
-                      <div className="space-y-1">
-                        <p>以下配置项需要完善：</p>
-                        <ul className="ml-4 space-y-1 text-xs">
-                          {configErrors.map((error, index) => (
-                            <li key={index} className="list-disc">
-                              {error}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Zap className="h-5 w-5" />
-                  音频控制
-                </CardTitle>
-                <CardDescription>麦克风和音频设置</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <MicControl />
-              </CardContent>
-            </Card>
-          </div>
         </TabsContent>
       </Tabs>
 

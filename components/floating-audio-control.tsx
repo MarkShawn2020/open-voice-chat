@@ -1,7 +1,7 @@
 "use client"
 
 import { ChevronDown, ChevronUp, Headphones, Mic, Volume2 } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
 import { MicControl } from "@/components/mic"
 import { Badge } from "@/components/ui/badge"
@@ -11,11 +11,30 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 
 export const FloatingAudioControl = () => {
   const [isExpanded, setIsExpanded] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  // 监听点击外部区域，自动收起面板
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        isExpanded && 
+        containerRef.current && 
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        setIsExpanded(false)
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [isExpanded])
 
   return (
-    <div className="fixed bottom-6 right-6 z-50">
+    <div ref={containerRef} className="fixed bottom-6 right-6 z-50">
       <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
-        <Card className="border-0 shadow-2xl bg-black/90 backdrop-blur-md text-white overflow-hidden">
+        <Card className="border-0 shadow-2xl bg-black/90 backdrop-blur-md text-white overflow-hidden p-2">
           <CollapsibleTrigger asChild>
             <Button
               variant="ghost"
