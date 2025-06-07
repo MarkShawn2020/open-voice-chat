@@ -4,8 +4,7 @@
  * Provides structured logging with different levels, contexts, and output formats.
  * Supports development and production environments with appropriate configurations.
  */
-
-import { getEnv } from './env-validation'
+import { env } from "@/env.mjs";
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error'
 
@@ -41,7 +40,6 @@ class Logger {
   }
 
   private getDefaultConfig(): LoggerConfig {
-    const env = getEnv()
     const isDevelopment = env.NODE_ENV === 'development'
 
     return {

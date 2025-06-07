@@ -182,9 +182,6 @@ Referrer-Policy: strict-origin-when-cross-origin
 ### 调试命令
 
 ```bash
-# 查看详细的环境变量验证
-NODE_ENV=development node -e "require('./lib/env-validation.js')"
-
 # 测试健康检查API
 curl -v http://localhost:3001/api/health
 
