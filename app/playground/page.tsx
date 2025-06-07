@@ -22,7 +22,7 @@ export default function PlaygroundPage() {
       </div>
 
       <div className="relative z-10 h-full overflow-hidden">        
-        <div className="container mx-auto px-6 py-12 h-full overflow-hidden flex flex-col">
+        <div className="container mx-auto p-4 h-full overflow-hidden flex flex-col">
           {/* 页面标题 */}
           <div className="text-center mb-12">
             <div className="mx-auto w-20 h-20 bg-gradient-to-br from-green-500 to-teal-600 rounded-full flex items-center justify-center mb-6 shadow-lg">
@@ -49,10 +49,10 @@ export default function PlaygroundPage() {
 
           {/* 主要内容区域 */}
           <div className="max-w-4xl mx-auto h-full overflow-hidden">
-            <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm overflow-hidden h-full">
-              <CardContent className="p-8 overflow-hidden h-full">
+            <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm overflow-hidden h-full p-2">
+              <CardContent className="p-4 overflow-hidden h-full">
                 <div className="space-y-6 overflow-hidden h-full flex flex-col">
-                  {/* 功能描述 */}
+                  {/* 功能描述
                   <div className="text-center pb-6 border-b border-gray-200">
                     <h2 className="text-2xl font-semibold text-gray-800 mb-3">
                       WebRTC Communication Testing
@@ -60,14 +60,14 @@ export default function PlaygroundPage() {
                     <p className="text-gray-600">
                       Test real-time voice communication, audio routing, and WebRTC connectivity in a controlled environment.
                     </p>
-                  </div>
+                  </div> */}
 
                   {/* Voice Call 组件 */}
                   <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6 flex-1 overflow-hidden">
                     <VoiceCall />
                   </div>
 
-                  {/* 技术信息 */}
+                  {/* 技术信息
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-6 border-t border-gray-200">
                     <div className="text-center">
                       <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-3">
@@ -90,7 +90,7 @@ export default function PlaygroundPage() {
                       <h3 className="font-semibold text-gray-800 mb-1">P2P Direct</h3>
                       <p className="text-sm text-gray-600">Direct peer connection</p>
                     </div>
-                  </div>
+                  </div> */}
                 </div>
               </CardContent>
             </Card>
