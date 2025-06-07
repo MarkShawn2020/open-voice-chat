@@ -18,6 +18,7 @@ import {
   Zap,
 } from "lucide-react"
 import React, { useState } from "react"
+import { toast } from "sonner"
 
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
@@ -178,6 +179,7 @@ export const Config: React.FC = () => {
   // 处理配置更新
   const handleUpdateConfig = () => {
     dispatchRtcAction({ type: "CLEAR_ERROR" })
+    toast.success("配置更新成功！")
   }
 
   // 生成Token提示

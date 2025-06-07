@@ -12,7 +12,7 @@ export default function Web() {
   const [isChatting] = useAtom(isChattingAtom)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+    <div className=" bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 h-full overflow-auto">
       {/* Background Pattern */}
       <div 
         className="absolute inset-0 opacity-40"
@@ -21,9 +21,9 @@ export default function Web() {
         }}
       />
       
-      <div className="relative min-h-screen flex flex-col">        
+      <div className="relative flex flex-col">        
         {/* Main Content */}
-        <main className="container mx-auto px-6 py-12">
+        <div className="container mx-auto px-6 py-12">
           <div className="max-w-5xl mx-auto">
             {/* AI Chat - 主产品 */}
             <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm">
@@ -129,7 +129,7 @@ export default function Web() {
               </CardContent>
             </Card>
           </div>
-        </main>
+        </div>
 
         {/* Footer */}
         <footer className="text-center mt-12 py-6 border-t border-white/20 flex-shrink-0">
