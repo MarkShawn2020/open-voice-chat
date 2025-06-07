@@ -8,7 +8,7 @@ import { VoiceCall } from "@/components/voice-call"
 
 export default function PlaygroundPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+    <div className="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 h-full overflow-hidden">
       {/* 背景纹理 */}
       <div className="fixed inset-0 opacity-10">
         <svg className="w-full h-full" viewBox="0 0 100 100">
@@ -21,8 +21,8 @@ export default function PlaygroundPage() {
         </svg>
       </div>
 
-      <div className="relative z-10">        
-        <main className="container mx-auto px-6 py-12">
+      <div className="relative z-10 h-full overflow-hidden">        
+        <div className="container mx-auto px-6 py-12 h-full overflow-hidden flex flex-col">
           {/* 页面标题 */}
           <div className="text-center mb-12">
             <div className="mx-auto w-20 h-20 bg-gradient-to-br from-green-500 to-teal-600 rounded-full flex items-center justify-center mb-6 shadow-lg">
@@ -48,10 +48,10 @@ export default function PlaygroundPage() {
           </div>
 
           {/* 主要内容区域 */}
-          <div className="max-w-4xl mx-auto">
-            <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm">
-              <CardContent className="p-8">
-                <div className="space-y-6">
+          <div className="max-w-4xl mx-auto h-full overflow-hidden">
+            <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm overflow-hidden h-full">
+              <CardContent className="p-8 overflow-hidden h-full">
+                <div className="space-y-6 overflow-hidden h-full flex flex-col">
                   {/* 功能描述 */}
                   <div className="text-center pb-6 border-b border-gray-200">
                     <h2 className="text-2xl font-semibold text-gray-800 mb-3">
@@ -63,7 +63,7 @@ export default function PlaygroundPage() {
                   </div>
 
                   {/* Voice Call 组件 */}
-                  <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6">
+                  <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6 flex-1 overflow-hidden">
                     <VoiceCall />
                   </div>
 
@@ -95,7 +95,7 @@ export default function PlaygroundPage() {
               </CardContent>
             </Card>
           </div>
-        </main>
+        </div>
       </div>
     </div>
   )

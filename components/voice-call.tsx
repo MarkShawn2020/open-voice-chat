@@ -96,8 +96,8 @@ export const VoiceCall: React.FC = () => {
   }
 
   return (
-    <div className="flex h-full w-full flex-col">
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 lg:grid-cols-2">
+    <div className="flex h-full w-full flex-col overflow-hidden">
+      <div className="grid h-full grid-cols-1 gap-6 lg:grid-cols-2 overflow-hidden">
         {/* 左侧：控制面板 */}
         <div className="space-y-4 overflow-y-auto">
           {/* 通话控制面板 */}
@@ -182,7 +182,7 @@ export const VoiceCall: React.FC = () => {
               </CardTitle>
               <CardDescription>配置AI智能体参数</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 overflow-y-auto">
               <div className="space-y-2">
                 <Label htmlFor="systemMessage">系统消息</Label>
                 <Textarea
@@ -295,7 +295,7 @@ export const VoiceCall: React.FC = () => {
         </div>
 
         {/* 右侧：聊天记录 */}
-        <div className="h-full min-h-0">
+        <div className="h-full min-h-0 overflow-y-auto">
           <ChatHistory messages={voiceChatState.chatHistory} />
         </div>
       </div>

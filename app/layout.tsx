@@ -130,14 +130,14 @@ export default function RootLayout({
       </head>
       <body
         className={`
-          min-h-screen font-sans antialiased selection:bg-blue-100 selection:text-blue-900
+          h-screen flex flex-col font-sans antialiased selection:bg-blue-100 selection:text-blue-900 overflow-hidden
           ${inter.className}
         `}
         suppressHydrationWarning
       >
         <Providers>
           <Navbar />
-          <div className="relative flex min-h-screen flex-col">
+          <div className="relative flex-1 flex flex-col overflow-hidden">
             {/* Global Loading Indicator */}
             <div id="global-loading" className="hidden fixed inset-0 z-50 bg-white/80 backdrop-blur-sm">
               <div className="flex items-center justify-center h-full">
@@ -146,7 +146,7 @@ export default function RootLayout({
             </div>
             
             {/* Main Content */}
-            <main className="flex-1 relative">
+            <main className="flex-1 relative overflow-hidden">
               {children}
             </main>
             <FloatingAudioControl />
