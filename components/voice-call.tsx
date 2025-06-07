@@ -1,6 +1,8 @@
 "use client"
 
-import { ChatHistory } from "@/components/chat/chat-history"
+import { useAtom } from "jotai"
+import { AlertCircle, Bot, BotOff, Mic, MicOff, Phone, PhoneOff, Users } from "lucide-react"
+import { useEffect, useMemo, useState } from "react"
 
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
@@ -11,15 +13,19 @@ import { Textarea } from "@/components/ui/textarea"
 import { rtcActionsAtom } from "@/store/rtc-actions"
 import { rtcConfigAtom } from "@/store/rtc-config"
 import { rtcStateAtom } from "@/store/rtc-state"
-import { voiceChatStateAtom } from "@/store/voice-chat-state"
-import { useAtom } from "jotai"
-import { AlertCircle, Bot, BotOff, Mic, MicOff, Phone, PhoneOff, Users } from "lucide-react"
-import React, { useEffect, useState } from "react"
+import { 
+  ChatRoomKey,
+  getCurrentRoomState, 
+  getOrCreateRoomState, 
+  updateRoomActivity, 
+  voiceChatStateAtom 
+} from "@/store/voice-chat-state"
+import { ChatHistory } from "./chat/chat-history"
 
 export const VoiceCall: React.FC = () => {
-  const [config, setConfig] = useAtom(rtcConfigAtom)
+  const [_config] = useAtom(rtcConfigAtom)
   const [rtcState] = useAtom(rtcStateAtom)
-  const [voiceChatState] = useAtom(voiceChatStateAtom)
+  const [voiceChatState, setVoiceChatState] = useAtom(voiceChatStateAtom)
   const [, dispatchRtcAction] = useAtom(rtcActionsAtom)
 
   const [aiConfig, setAiConfig] = useState({
@@ -27,12 +33,46 @@ export const VoiceCall: React.FC = () => {
     welcomeMessage: "你好！我是你的AI助手，有什么可以帮助你的吗？",
   })
 
+  // 当前房间的标识
+  const currentRoomKey: ChatRoomKey | null = useMemo(() => {
+    if (!_config?.roomId || !_config?.uid) return null
+    
+    return {
+      roomId: _config.roomId,
+      userId: _config.uid,
+      taskId: 'default' // 使用默认 taskId，后续可以根据需要扩展
+    }
+  }, [_config?.roomId, _config?.uid])
+
+  // 获取当前房间状态
+  const currentRoomState = useMemo(() => {
+    return getCurrentRoomState(voiceChatState)
+  }, [voiceChatState])
+
+  // 确保当前房间存在
+  useEffect(() => {
+    if (currentRoomKey && !currentRoomState) {
+      const { state: newState } = getOrCreateRoomState(voiceChatState, currentRoomKey)
+      setVoiceChatState({
+        ...newState,
+        currentRoomKey
+      })
+    }
+  }, [currentRoomKey, currentRoomState, voiceChatState, setVoiceChatState])
+
+  // 更新房间活动时间
+  useEffect(() => {
+    if (currentRoomKey) {
+      updateRoomActivity(voiceChatState, currentRoomKey)
+    }
+  }, [currentRoomKey, voiceChatState])
+
   // 初始化引擎
   useEffect(() => {
-    if (config && !rtcState.engine) {
+    if (_config && !rtcState.engine) {
       dispatchRtcAction({ type: "INITIALIZE_ENGINE" })
     }
-  }, [config, rtcState.engine, dispatchRtcAction])
+  }, [_config, rtcState.engine, dispatchRtcAction])
 
   // 加入房间
   const handleJoinRoom = async () => {
@@ -86,7 +126,7 @@ export const VoiceCall: React.FC = () => {
     if (taskId && taskId !== userId) {
       // 直接调用停止API，而不是通过全局状态
       import("@/lib/voice-chat-actions").then(({ stopVoiceChat }) => {
-        stopVoiceChat(config.appId, config.roomId, taskId).then((result) => {
+        stopVoiceChat(_config.appId, _config.roomId, taskId).then((result) => {
           if (result.success) {
             console.log(`成功停止智能体 ${taskId}`)
             // 可以选择性地更新本地状态或重新获取状态
@@ -112,7 +152,7 @@ export const VoiceCall: React.FC = () => {
                 通话控制
               </CardTitle>
               <CardDescription>
-                房间: {config?.roomId || "未配置"} | 用户: {config?.uid || "未配置"}
+                房间: {_config?.roomId || "未配置"} | 用户: {_config?.uid || "未配置"}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -139,8 +179,8 @@ export const VoiceCall: React.FC = () => {
 
                 <div className="flex items-center justify-between">
                   <span>AI智能体:</span>
-                  <span className={`font-medium ${voiceChatState.isAgentActive ? "text-green-600" : "text-gray-500"}`} >
-                    {voiceChatState.isAgentActive ? "运行中" : "未启动"}
+                  <span className={`font-medium ${currentRoomState?.isAgentActive ? "text-green-600" : "text-gray-500"}`} >
+                    {currentRoomState?.isAgentActive ? "运行中" : "未启动"}
                   </span>
                 </div>
               </div>
@@ -148,7 +188,7 @@ export const VoiceCall: React.FC = () => {
               {/* 通话控制按钮 */}
               <div className="flex gap-2">
                 {!rtcState.isConnected ? (
-                  <Button onClick={handleJoinRoom} className="flex-1" disabled={!config}>
+                  <Button onClick={handleJoinRoom} className="flex-1" disabled={!_config}>
                     <Phone className="mr-2 h-4 w-4" />
                     加入房间
                   </Button>
@@ -207,32 +247,32 @@ export const VoiceCall: React.FC = () => {
                 />
               </div>
 
-              {voiceChatState.taskId && (
+              {currentRoomState?.roomKey.taskId && (
                 <div className="flex items-center justify-between">
                   <span className="text-sm">任务ID:</span>
-                  <span className="font-mono text-xs text-gray-500">{voiceChatState.taskId.slice(0, 8)}...</span>
+                  <span className="font-mono text-xs text-gray-500">{currentRoomState.roomKey.taskId.slice(0, 8)}...</span>
                 </div>
               )}
 
               <div className="flex gap-2">
-                {!voiceChatState.isAgentActive ? (
+                {!currentRoomState?.isAgentActive ? (
                   <Button
                     onClick={handleStartVoiceChat}
                     className="flex-1"
-                    disabled={!rtcState.isConnected || voiceChatState.isStarting}
+                    disabled={!rtcState.isConnected || currentRoomState?.isStarting}
                   >
                     <Bot className="mr-2 h-4 w-4" />
-                    {voiceChatState.isStarting ? "启动中..." : "启动AI智能体"}
+                    {currentRoomState?.isStarting ? "启动中..." : "启动AI智能体"}
                   </Button>
                 ) : (
                   <Button
                     onClick={handleStopVoiceChat}
                     className="flex-1"
                     variant="destructive"
-                    disabled={voiceChatState.isStopping}
+                    disabled={currentRoomState?.isStopping}
                   >
                     <BotOff className="mr-2 h-4 w-4" />
-                    {voiceChatState.isStopping ? "停止中..." : "停止AI智能体"}
+                    {currentRoomState?.isStopping ? "停止中..." : "停止AI智能体"}
                   </Button>
                 )}
               </div>
@@ -247,10 +287,10 @@ export const VoiceCall: React.FC = () => {
             </Alert>
           )}
 
-          {voiceChatState.error && (
+          {currentRoomState?.error && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
-              <AlertDescription>AI智能体错误: {voiceChatState.error}</AlertDescription>
+              <AlertDescription>AI智能体错误: {currentRoomState.error}</AlertDescription>
             </Alert>
           )}
 
@@ -300,7 +340,7 @@ export const VoiceCall: React.FC = () => {
 
         {/* 右侧：聊天记录 */}
         <div className="h-full min-h-0 overflow-y-auto">
-          <ChatHistory messages={voiceChatState.chatHistory} />
+          <ChatHistory messages={currentRoomState?.chatHistory || []}/>
         </div>
       </div>
     </div>

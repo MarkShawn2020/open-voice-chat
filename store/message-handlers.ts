@@ -1,4 +1,5 @@
 // 处理房间二进制消息
+import type { Getter, Setter } from "jotai/index"
 import { appConfigAtom } from "@/store/app-config"
 import {
   AGENT_BRIEF,
@@ -8,8 +9,11 @@ import {
   SubtitleMessage,
 } from "@/store/message-parser"
 
-import { ChatMessage, voiceChatStateAtom } from "@/store/voice-chat-state"
-import type { Getter, Setter } from "jotai/index"
+import { 
+  ChatMessage, 
+  getOrCreateRoomState,
+  voiceChatStateAtom
+} from "@/store/voice-chat-state"
 
 export function handleRoomBinaryMessageReceived(e: { userId: string; message: ArrayBuffer }, set: Setter, get: Getter) {
   return
@@ -124,13 +128,31 @@ function handleSubtitleMessage(
     const currentState = get(voiceChatStateAtom)
     const config = get(appConfigAtom)
 
+    // 创建房间标识符
+    const roomKey = {
+      roomId: config.rtc.roomId,
+      userId: config.rtc.uid,
+      taskId: 'default'
+    }
+
+    // 设置当前房间key（如果尚未设置）
+    if (!currentState.currentRoomKey) {
+      set(voiceChatStateAtom, {
+        ...currentState,
+        currentRoomKey: roomKey
+      })
+    }
+
+    // 获取或创建当前房间状态
+    const { state: updatedState, roomState: currentRoomState } = getOrCreateRoomState(currentState, roomKey)
+
     // 处理聊天记录 - 支持实时更新
     const isUser = userId === config.rtc.uid
     const isAgent = userId?.startsWith("voice_agent_")
 
     if (isUser || isAgent) {
       const role = isUser ? "user" : "assistant"
-      const chatHistory = [...currentState.chatHistory]
+      const chatHistory = [...currentRoomState.chatHistory]
 
       // 查找最后一条消息
       const lastMessage = chatHistory[chatHistory.length - 1]
@@ -175,18 +197,27 @@ function handleSubtitleMessage(
         console.log("更新聊天记录:", { text, userId, definite, paragraph })
       }
 
-      // 更新状态
-      set(voiceChatStateAtom, {
-        ...currentState,
+      // 更新房间状态
+      const updatedRoomState = {
+        ...currentRoomState,
+        chatHistory,
         subtitle: {
           text,
           userId: userId || "unknown",
           isDefinite: !!definite,
           timestamp: Date.now(),
-        },
-        chatHistory,
+        }
+      }
+
+      // 使用新的房间状态更新全局状态
+      const roomIdentifier = `${roomKey.roomId}:${roomKey.userId}:${roomKey.taskId}`
+      set(voiceChatStateAtom, {
+        ...updatedState,
+        rooms: {
+          ...updatedState.rooms,
+          [roomIdentifier]: updatedRoomState
+        }
       })
     }
   }
 }
-
