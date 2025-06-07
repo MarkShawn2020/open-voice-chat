@@ -1,6 +1,6 @@
 "use client"
 
-import { ChatHistory } from "@/components/chat-history"
+import { ChatHistory } from "@/components/chat/chat-history"
 
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"

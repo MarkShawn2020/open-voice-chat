@@ -1,169 +1,24 @@
 "use client"
 
-import { useAtom } from "jotai"
-import {
-  AlertCircle,
-  Brain,
-  CheckCircle2,
-  Copy,
-  ExternalLink,
-  Eye,
-  EyeOff,
-  HelpCircle,
-  Mic,
-  RefreshCw,
-  Server,
-  Settings,
-  Volume2,
-  Zap,
-} from "lucide-react"
-import React, { useState } from "react"
-import { toast } from "sonner"
+import { VOLCENGINE_GUIDES } from "@/components/config/config-const"
+import { ConfigField } from "@/components/config/config-field"
+import { ConfigStatus } from "@/components/config/config-status"
+import { ExternalLinkButton } from "@/components/config/external-link-button"
 
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
-import { AppConfig, appConfigAtom, rtcActionsAtom, rtcStateAtom } from "@/store/rtc"
-import { MicControl } from "./mic"
-
-const VOLCENGINE_GUIDES = {
-  rtc: {
-    url: "https://console.volcengine.com/rtc/listRTC",
-    title: "火山引擎 RTC 控制台",
-    description: "获取 App ID、生成 Token",
-  },
-  speech: {
-    url: "https://console.volcengine.com/speech/app",
-    title: "火山引擎语音技术控制台",
-    description: "获取 ASR/TTS App ID 和 Access Token",
-  },
-  llm: {
-    url: "https://console.volcengine.com/ark/region:ark+cn-beijing/endpoint",
-    title: "火山方舟大模型控制台",
-    description: "获取 Endpoint ID",
-  },
-}
-
-// 配置验证函数
-const validateConfig = (config: AppConfig) => {
-  const errors: string[] = []
-
-  if (!config.rtc.appId) errors.push("RTC App ID 不能为空")
-  if (!config.rtc.token) errors.push("RTC Token 不能为空")
-  if (!config.asr.appId) errors.push("ASR App ID 不能为空")
-  if (!config.asr.accessToken) errors.push("ASR Access Token 不能为空")
-  if (!config.tts.appId) errors.push("TTS App ID 不能为空")
-  if (!config.tts.accessToken) errors.push("TTS Access Token 不能为空")
-  if (!config.llm.endpointId) errors.push("LLM Endpoint ID 不能为空")
-
-  return errors
-}
-
-// 配置状态组件
-const ConfigStatus: React.FC<{ errors: string[] }> = ({ errors }) => {
-  const isComplete = errors.length === 0
-
-  return (
-    <Alert className={isComplete ? "border-green-200 bg-green-50" : "border-amber-200 bg-amber-50"}>
-      {isComplete ? (
-        <CheckCircle2 className="h-4 w-4 text-green-600" />
-      ) : (
-        <AlertCircle className="h-4 w-4 text-amber-600" />
-      )}
-      <AlertDescription className={isComplete ? "text-green-800" : "text-amber-800"}>
-        {isComplete ? "🎉 配置完成！可以开始语音对话了" : `还有 ${errors.length} 项配置需要完善`}
-      </AlertDescription>
-    </Alert>
-  )
-}
-
-// 外部链接组件
-const ExternalLinkButton: React.FC<{
-  title: string
-  description: string
-  url: string
-}> = ({ title, description, url }) => (
-  <Button
-    variant="outline"
-    size="sm"
-    className="h-auto justify-start p-3 text-left"
-    onClick={() => window.open(url, "_blank")}
-  >
-    <div className="flex items-start gap-3">
-      <ExternalLink className="mt-0.5 h-4 w-4 flex-shrink-0 text-blue-600" />
-      <div className="space-y-1">
-        <div className="text-sm font-medium">{title}</div>
-        <div className="text-muted-foreground text-xs">{description}</div>
-      </div>
-    </div>
-  </Button>
-)
-
-// 配置字段组件
-const ConfigField: React.FC<{
-  label: string
-  description?: string
-  placeholder: string
-  value: string
-  onChange: (value: string) => void
-  type?: "text" | "password"
-  copyable?: boolean
-}> = ({ label, description, placeholder, value, onChange, type = "text", copyable = false }) => {
-  const [showPassword, setShowPassword] = useState(false)
-  const [copied, setCopied] = useState(false)
-
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(value)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    } catch (error) {
-      console.error("复制失败:", error)
-    }
-  }
-
-  const inputType = type === "password" && !showPassword ? "password" : "text"
-
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <Label className="text-sm font-medium">{label}</Label>
-        {type === "password" && (
-          <Button variant="ghost" size="sm" onClick={() => setShowPassword(!showPassword)} className="h-6 px-2">
-            {showPassword ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-          </Button>
-        )}
-      </div>
-      {description && <p className="text-muted-foreground text-xs">{description}</p>}
-      <div className="relative">
-        <Input
-          type={inputType}
-          placeholder={placeholder}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="pr-10"
-        />
-        {copyable && value && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleCopy}
-            className="absolute top-1/2 right-2 h-6 w-6 -translate-y-1/2 p-0"
-          >
-            {copied ? <CheckCircle2 className="h-3 w-3 text-green-600" /> : <Copy className="h-3 w-3" />}
-          </Button>
-        )}
-      </div>
-    </div>
-  )
-}
+import { validateConfig } from "@/components/config/validate-config"
+import { appConfigAtom, rtcActionsAtom, rtcStateAtom } from "@/store/rtc"
+import { useAtom } from "jotai"
+import { Brain, HelpCircle, Mic, RefreshCw, Server, Settings, Volume2 } from "lucide-react"
+import React, { useState } from "react"
+import { toast } from "sonner"
 
 export const Config: React.FC = () => {
   const [config, setConfig] = useAtom(appConfigAtom)

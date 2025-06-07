@@ -1,6 +1,6 @@
 // 聊天记录组件
-import { ChatMessageItem } from "@/components/chat-message-item"
-import { TimeStamp } from "@/components/chat-timestamp"
+import { ChatMessageItem } from "@/components/chat/chat-message-item"
+import { TimeStamp } from "@/components/chat/chat-timestamp"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ChatMessage, rtcActionsAtom } from "@/store/rtc"

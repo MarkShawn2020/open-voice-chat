@@ -51,14 +51,16 @@
 }</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/components/config" />
+      <recent name="$PROJECT_DIR$/components/chat" />
       <recent name="$PROJECT_DIR$/lib" />
     </key>
     <key name="es6.move.members.recent.items">
-      <recent name="$PROJECT_DIR$/components/chat-history.tsx" />
-      <recent name="$PROJECT_DIR$/components/chat-message-item.tsx" />
-      <recent name="$PROJECT_DIR$/components/chat-timestamp.tsx" />
-      <recent name="$PROJECT_DIR$/store/global.ts" />
-      <recent name="$PROJECT_DIR$/components/mic.tsx" />
+      <recent name="$PROJECT_DIR$/components/config-const.ts" />
+      <recent name="$PROJECT_DIR$/components/validate-config.ts" />
+      <recent name="$PROJECT_DIR$/components/config-field.tsx" />
+      <recent name="$PROJECT_DIR$/components/external-link-button.tsx" />
+      <recent name="$PROJECT_DIR$/components/config-status.tsx" />
     </key>
   </component>
   <component name="RunManager" selected="npm.Next.js: server-side">
@@ -90,7 +92,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1749181875953</updated>
-      <workItem from="1749181877479" duration="13673000" />
+      <workItem from="1749181877479" duration="17152000" />
     </task>
     <servers />
   </component>
