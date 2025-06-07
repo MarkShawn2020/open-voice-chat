@@ -1,6 +1,7 @@
 "use client"
 
 import { Github, MessageCircle, Sparkles } from "lucide-react"
+import Link from "next/link"
 
 import { SettingsModal } from "@/components/settings-modal"
 import { Badge } from "@/components/ui/badge"
@@ -35,21 +36,29 @@ export const Navbar = () => {
           <div className="flex items-center gap-3">
             <SettingsModal />
             
-            <Button 
-              variant="ghost" 
-              size="sm"
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-              asChild
-            >
-              <a 
-                href="https://github.com/markshawn2020/open-voice-chat" 
-                target="_blank" 
+            <div className="flex items-center gap-6">
+              <Link 
+                href="/"
+                className="text-gray-600 hover:text-blue-600 transition-colors font-medium"
+              >
+                Home
+              </Link>
+              <Link 
+                href="/playground"
+                className="text-gray-600 hover:text-green-600 transition-colors font-medium"
+              >
+                Playground
+              </Link>
+              <a
+                href="https://github.com/markshawn2020/open-voice-chat"
+                target="_blank"
                 rel="noopener noreferrer"
+                className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
               >
                 <Github className="w-4 h-4" />
-                GitHub
+                <span className="font-medium">GitHub</span>
               </a>
-            </Button>
+            </div>
 
             <Button 
               size="sm"
