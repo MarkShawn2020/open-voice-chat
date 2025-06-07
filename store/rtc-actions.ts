@@ -277,16 +277,16 @@ export const rtcActionsAtom = atom(null, (get: Getter, set: Setter, action: RTCA
       break
 
     case "DELETE_CHAT_MESSAGE":
-      const chatHistory = [...voiceChatState.chatHistory]
-      const index = chatHistory.findIndex((message) => message.id === action.messageId)
+      const allChatHistory = [...voiceChatState.allChatHistory]
+      const index = allChatHistory.findIndex((message) => message.id === action.messageId)
       if (index !== -1) {
-        chatHistory.splice(index, 1)
-        set(voiceChatStateAtom, (prev) => ({ ...prev, chatHistory }))
+        allChatHistory.splice(index, 1)
+        set(voiceChatStateAtom, (prev) => ({ ...prev, allChatHistory }))
       }
       break
 
     case "CLEAR_CHAT_HISTORY":
-      set(voiceChatStateAtom, (prev) => ({ ...prev, chatHistory: [] }))
+      set(voiceChatStateAtom, (prev) => ({ ...prev, allChatHistory: [] }))
       break
 
     case "SET_ERROR":

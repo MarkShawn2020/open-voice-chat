@@ -7,14 +7,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 import { rtcActionsAtom } from "@/store/rtc-actions"
 import { ChatMessage } from "@/store/voice-chat-state"
+import { currentMessagesAtom } from "@/store/voice-chat-state"
 import { useAtom } from "jotai/index"
 import { MessageCircle } from "lucide-react"
 import React, { useEffect, useRef, useState } from "react"
 
-export const ChatHistory: React.FC<{ messages: ChatMessage[] }> = ({ messages }) => {
+export const ChatHistory = () => {
   const [, dispatchRtcAction] = useAtom(rtcActionsAtom)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const [isHydrated, setIsHydrated] = useState(false)
+  const [messages] = useAtom(currentMessagesAtom)
 
   // 时间间隔阈值（30秒）
   const TIME_THRESHOLD = 30 * 1000
