@@ -1,0 +1,1 @@
+export const AGENT_PREFIX = "agent_"

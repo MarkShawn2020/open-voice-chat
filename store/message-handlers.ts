@@ -1,15 +1,10 @@
 // 处理房间二进制消息
+import { AGENT_PREFIX } from "@/constants"
 import { appConfigAtom } from "@/store/app-config"
-import {
-  AGENT_BRIEF,
-  AgentBriefMessage,
-  MESSAGE_TYPE,
-  MessageParser,
-  SubtitleMessage,
-} from "@/store/message-parser"
+import { AGENT_BRIEF, AgentBriefMessage, MESSAGE_TYPE, MessageParser, SubtitleMessage } from "@/store/message-parser"
 
 import { ChatMessage, voiceChatStateAtom } from "@/store/voice-chat-state"
-import type { Getter, Setter } from "jotai/index"
+import type { Getter, Setter } from "jotai"
 
 export function handleRoomBinaryMessageReceived(e: { userId: string; message: ArrayBuffer }, set: Setter, get: Getter) {
   // return
@@ -126,7 +121,7 @@ function handleSubtitleMessage(
 
     // 处理聊天记录 - 支持实时更新
     const isUser = userId === config.rtc.uid
-    const isAgent = userId?.startsWith("voice_agent_")
+    const isAgent = userId?.startsWith(AGENT_PREFIX)
 
     if (isUser || isAgent) {
       const role = isUser ? "user" : "assistant"

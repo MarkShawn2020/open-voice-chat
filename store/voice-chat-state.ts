@@ -44,17 +44,15 @@ export const createRoomKey = (roomId: string, userId: string, taskId: string): s
 
 export const currentMessagesAtom = atom((get) => {
   const roomId = get(appConfigAtom).rtc.roomId
-  const userId = get(appConfigAtom).rtc.uid
   const state = get(voiceChatStateAtom)
 
   const allMessages = state.allChatHistory
 
   let curMessages: ChatMessage[] = []
 
-  if (roomId && userId ) {
+  if (roomId ) {
       curMessages =  allMessages.filter(message =>
-        message.roomId === roomId &&
-        message.userId === userId 
+        message.roomId === roomId 
       )
   }
 

@@ -7,6 +7,9 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { AGENT_PREFIX } from "@/constants"
+import { stopVoiceChat } from "@/lib/voice-chat-actions"
+import { AGENT_BRIEF } from "@/store/message-parser"
 
 import { rtcActionsAtom } from "@/store/rtc-actions"
 import { rtcConfigAtom } from "@/store/rtc-config"
@@ -81,11 +84,10 @@ export const VoiceCall: React.FC = () => {
 
   // 基于 userId 精准停止特定的 AI智能体
   const handleStopSpecificVoiceAgent = (userId: string) => {
-    // 从用户ID中提取 taskId (格式: voice_agent_${taskId})
-    const taskId = userId.replace("voice_agent_", "")
+    // 从用户ID中提取 taskId (格式: agent_${taskId})
+    const taskId = userId.replace(AGENT_PREFIX, "")
     if (taskId && taskId !== userId) {
       // 直接调用停止API，而不是通过全局状态
-      import("@/lib/voice-chat-actions").then(({ stopVoiceChat }) => {
         stopVoiceChat(config.appId, config.roomId, taskId).then((result) => {
           if (result.success) {
             console.log(`成功停止智能体 ${taskId}`)
@@ -95,7 +97,6 @@ export const VoiceCall: React.FC = () => {
             dispatchRtcAction({ type: "SET_ERROR", payload: `停止智能体失败: ${result.error}` })
           }
         })
-      })
     }
   }
 
@@ -263,8 +264,8 @@ export const VoiceCall: React.FC = () => {
               <CardContent>
                 <div className="space-y-2">
                   {rtcState.remoteUsers.map((userId) => {
-                    const isVoiceAgent = userId.startsWith("voice_agent_")
-                    const taskId = isVoiceAgent ? userId.replace("voice_agent_", "") : null
+                    const isVoiceAgent = userId.startsWith(AGENT_PREFIX)
+                    const taskId = isVoiceAgent ? userId.replace(AGENT_PREFIX, "") : null
 
                     return (
                       <div key={userId} className="flex items-center justify-between rounded bg-gray-50 p-2">

@@ -1,5 +1,6 @@
 'use server'
 
+import { AGENT_PREFIX } from "@/constants"
 import { Signer } from '@volcengine/openapi'
 import { v4 as uuidv4 } from 'uuid'
 
@@ -168,7 +169,7 @@ export async function startVoiceChat(config: StartVoiceChatConfig): Promise<{
       AgentConfig: {
         TargetUserId: [config.targetUserId],
         WelcomeMessage: config.welcomeMessage || '你好！我是你的AI助手，有什么可以帮助你的吗？',
-        UserId: `voice_agent_${taskId}`,
+        UserId: `${AGENT_PREFIX}${taskId}`,
         EnableConversationStateCallback: true
       }
     }

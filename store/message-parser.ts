@@ -99,7 +99,7 @@ export class MessageParser {
  "sequence": 49,
  "text": "有啥事儿尽管说，中文英",
  "timestamp": 1749234040654,
- "userId": "voice_agent_a8d496ec-139f-4ade-b868-90f293adca56"
+ "userId": "agent_a8d496ec-139f-4ade-b868-90f293adca56"
  }
  * ```
  */

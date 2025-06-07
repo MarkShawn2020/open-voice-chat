@@ -1,4 +1,5 @@
 // RTC 操作原子
+import { AGENT_PREFIX } from "@/constants"
 import { startVoiceChat, stopVoiceChat } from "@/lib/voice-chat-actions"
 import { appConfigAtom } from "@/store/app-config"
 import { handleRoomBinaryMessageReceived } from "@/store/message-handlers"
@@ -211,7 +212,7 @@ export const rtcActionsAtom = atom(null, (get: Getter, set: Setter, action: RTCA
                 ...prev,
                 isAgentActive: true,
                 taskId: result.taskId || null,
-                agentUserId: `voice_agent_${result.taskId}`,
+                agentUserId: `${AGENT_PREFIX}${result.taskId}`,
                 isStarting: false,
                 error: null,
               }))
