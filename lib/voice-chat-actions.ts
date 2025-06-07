@@ -17,6 +17,7 @@ interface StartVoiceChatConfig {
   asr?: {
     appId: string
     accessToken: string
+    cluster: string
     mode: string
   }
   tts?: {
@@ -109,7 +110,8 @@ export async function startVoiceChat(config: StartVoiceChatConfig): Promise<{
             AppId: config.asr?.appId || process.env.VOLCENGINE_ASR_APP_ID || '94****11',
             AccessToken: config.asr?.accessToken || process.env.VOLCENGINE_ASR_ACCESS_TOKEN || 'OaO****ws1',
             "ApiResourceId": "volc.bigasr.sauc.duration",
-            "StreamMode": 0
+            "StreamMode": 0,
+            Cluster: config.asr?.cluster
           },
           VolumeGain: 0.3,
           InterruptConfig: {

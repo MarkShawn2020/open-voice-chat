@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
@@ -144,6 +145,22 @@ export const Config: React.FC = () => {
               <CardContent className="space-y-4">
                 <ExternalLinkButton {...VOLCENGINE_GUIDES.speech} />
 
+                <div className="space-y-2">
+                  <Label htmlFor="asr-mode">语音识别模式</Label>
+                  <Select
+                    value={config.asr.mode}
+                    onValueChange={(value) => bindKey("asr.mode")(value)}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="选择语音识别模式" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="realtime">流式语音识别（实时）</SelectItem>
+                      <SelectItem value="bigmodel">流式语音识别大模型</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 <ConfigField
                   label="App ID"
                   placeholder="输入 ASR App ID"
@@ -151,13 +168,24 @@ export const Config: React.FC = () => {
                   onChange={bindKey("asr.appId")}
                 />
 
-                <ConfigField
-                  label="Access Token"
-                  placeholder="输入 ASR Access Token"
-                  value={config.asr.accessToken}
-                  onChange={bindKey("asr.accessToken")}
-                  type="password"
-                />
+                {config.asr.mode === "realtime" ? (
+                  <ConfigField
+                    label="Cluster"
+                    placeholder="默认：volcengine_streaming_common"
+                    value={config.asr.cluster}
+                    onChange={bindKey("asr.cluster")}
+                    description="控制台地址：https://console.volcengine.com/speech/service/16"
+                  />
+                ) : (
+                  <ConfigField
+                    label="Access Token"
+                    placeholder="输入 Access Token"
+                    value={config.asr.accessToken}
+                    onChange={bindKey("asr.accessToken")}
+                    type="password"
+                    description="控制台地址：https://console.volcengine.com/speech/service/10011"
+                  />
+                )}
               </CardContent>
             </Card>
 
@@ -206,6 +234,7 @@ export const Config: React.FC = () => {
 
                     <div className="space-y-2">
                       <Label className="text-sm font-medium">语速: {config.tts.speechRate}</Label>
+                      <p className="text-muted-foreground text-xs">控制语音的播放速度</p>
                       <Slider
                         value={[config.tts.speechRate]}
                         onValueChange={([value]: number[]) => bindKey("tts.speechRate")(value!.toString())}
@@ -218,6 +247,7 @@ export const Config: React.FC = () => {
 
                     <div className="space-y-2">
                       <Label className="text-sm font-medium">音调: {config.tts.pitchRate}</Label>
+                      <p className="text-muted-foreground text-xs">控制语音的音调</p>
                       <Slider
                         value={[config.tts.pitchRate]}
                         onValueChange={([value]: number[]) => bindKey("tts.pitchRate")(value!.toString())}

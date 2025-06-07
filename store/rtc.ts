@@ -359,6 +359,7 @@ export interface AppConfig {
   asr: {
     appId: string
     accessToken: string
+    cluster: string
     mode: 'realtime' | 'bigmodel'
   }
   
@@ -401,6 +402,7 @@ export const defaultAppConfig: AppConfig = {
   asr: {
     appId: "",
     accessToken: "",
+    cluster: "volcengine_streaming_common",
     mode: 'bigmodel'
   },
   tts: {
@@ -648,6 +650,7 @@ export const rtcActionsAtom = atom(null, (get: Getter, set: Setter, action: RTCA
           asr: {
             appId: config.asr.appId,
             accessToken: config.asr.accessToken,
+            cluster: config.asr.cluster,
             mode: config.asr.mode
           },
           tts: {
