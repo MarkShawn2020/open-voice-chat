@@ -14,6 +14,24 @@ interface StartVoiceChatConfig {
   targetUserId: string
   systemMessage?: string
   welcomeMessage?: string
+  asr?: {
+    appId: string
+    accessToken: string
+    mode: string
+  }
+  tts?: {
+    appId: string
+    accessToken: string
+    voiceType: string
+    speechRate: number
+    pitchRate: number
+  }
+  llm?: {
+    endpointId: string
+    temperature: number
+    maxTokens: number
+    topP: number
+  }
 }
 
 // 启动智能体响应接口
@@ -87,9 +105,9 @@ export async function startVoiceChat(config: StartVoiceChatConfig): Promise<{
         ASRConfig: {
           Provider: 'volcano',
           ProviderParams: {
-            Mode: "bigmodel",
-            AppId: process.env.VOLCENGINE_ASR_APP_ID || '94****11',
-            AccessToken: process.env.VOLCENGINE_ASR_ACCESS_TOKEN || 'OaO****ws1',
+            Mode: config.asr?.mode || "bigmodel",
+            AppId: config.asr?.appId || process.env.VOLCENGINE_ASR_APP_ID || '94****11',
+            AccessToken: config.asr?.accessToken || process.env.VOLCENGINE_ASR_ACCESS_TOKEN || 'OaO****ws1',
             "ApiResourceId": "volc.bigasr.sauc.duration",
             "StreamMode": 0
           },
@@ -104,13 +122,13 @@ export async function startVoiceChat(config: StartVoiceChatConfig): Promise<{
           Provider: 'volcano_bidirection',
           ProviderParams: {
             app: {
-              appid: process.env.VOLCENGINE_TTS_APP_ID || '94****11',
-              token: process.env.VOLCENGINE_TTS_ACCESS_TOKEN || 'volcano_tts'
+              appid: config.tts?.appId || process.env.VOLCENGINE_TTS_APP_ID || '94****11',
+              token: config.tts?.accessToken || process.env.VOLCENGINE_TTS_ACCESS_TOKEN || 'volcano_tts'
             },
             "audio": {
-              "voice_type": "zh_male_qingshuangnanda_mars_bigtts",
-              "speech_rate": 0,
-              "pitch_rate": 0
+              "voice_type": config.tts?.voiceType || "zh_male_qingshuangnanda_mars_bigtts",
+              "speech_rate": config.tts?.speechRate || 0,
+              "pitch_rate": config.tts?.pitchRate || 0
           },
           "ResourceId": "volc.service_type.10029"
           },
@@ -118,10 +136,10 @@ export async function startVoiceChat(config: StartVoiceChatConfig): Promise<{
         },
         LLMConfig: {
           Mode: 'ArkV3', // 使用火山方舟平台
-          EndPointId: process.env.VOLCENGINE_ENDPOINT_ID || 'ep-22****212',
-          Temperature: 0.7,
-          MaxTokens: 1024,
-          TopP: 0.8,
+          EndPointId: config.llm?.endpointId || process.env.VOLCENGINE_ENDPOINT_ID || 'ep-22****212',
+          Temperature: config.llm?.temperature || 0.7,
+          MaxTokens: config.llm?.maxTokens || 1024,
+          TopP: config.llm?.topP || 0.8,
           SystemMessages: [
             config.systemMessage || '你是一个友好的AI助手，用简洁明了的方式回答问题。',
             '请用自然、口语化的方式对话，每次回复控制在100字以内。'

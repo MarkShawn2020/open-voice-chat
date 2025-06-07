@@ -265,10 +265,10 @@ function handleSubtitleMessage(
   
   if (text) {
     const currentState = get(voiceChatStateAtom)
-    const config = get(rtcConfigAtom)
+    const config = get(appConfigAtom)
     
     // 处理聊天记录 - 支持实时更新
-    const isUser = userId === config.uid
+    const isUser = userId === config.rtc.uid
     const isAgent = userId?.startsWith('voice_agent_')
     
     if (isUser || isAgent) {
@@ -344,12 +344,79 @@ export interface ChatMessage {
   isDefinite: boolean // 消息是否基于确定的语音识别结果
 }
 
-// RTC 配置
+// 应用配置 - 包含所有服务的配置
+export interface AppConfig {
+  // RTC 配置
+  rtc: {
+    appId: string
+    roomId: string
+    uid: string
+    token: string
+  }
+  
+  // ASR (语音识别) 配置
+  asr: {
+    appId: string
+    accessToken: string
+    mode: 'realtime' | 'bigmodel'
+  }
+  
+  // TTS (文本转语音) 配置
+  tts: {
+    appId: string
+    accessToken: string
+    voiceType: string
+    speechRate: number
+    pitchRate: number
+  }
+  
+  // LLM (大语言模型) 配置
+  llm: {
+    endpointId: string
+    temperature: number
+    maxTokens: number
+    topP: number
+    systemMessage: string
+    welcomeMessage: string
+  }
+}
+
+// RTC 配置 (向后兼容)
 export interface RTCConfig {
   appId: string
   roomId: string
   uid: string
   token: string
+}
+
+// 默认应用配置
+export const defaultAppConfig: AppConfig = {
+  rtc: {
+    appId: "",
+    roomId: "Room123",
+    uid: "User123",
+    token: ""
+  },
+  asr: {
+    appId: "",
+    accessToken: "",
+    mode: 'bigmodel'
+  },
+  tts: {
+    appId: "",
+    accessToken: "",
+    voiceType: "zh_male_qingshuangnanda_mars_bigtts",
+    speechRate: 0,
+    pitchRate: 0
+  },
+  llm: {
+    endpointId: "",
+    temperature: 0.7,
+    maxTokens: 1024,
+    topP: 0.8,
+    systemMessage: "你是一个友好的AI助手，用简洁明了的方式回答问题。",
+    welcomeMessage: "你好！我是你的AI助手，有什么可以帮助你的吗？"
+  }
 }
 
 // RTC 状态
@@ -384,15 +451,21 @@ export interface VoiceChatState {
   chatHistory: ChatMessage[]
 }
 
-export const defaultRTCConfig: RTCConfig = {
-  appId: "",
-  roomId: "Room123",
-  uid: "User123",
-  token: ""
-}
-
 // 初始状态
-export const rtcConfigAtom = atomWithStorage<RTCConfig>("rtcConfig", defaultRTCConfig, undefined, {getOnInit: true})
+export const appConfigAtom = atomWithStorage<AppConfig>("appConfig", defaultAppConfig, undefined, {getOnInit: true})
+
+// 向后兼容的 RTC 配置原子
+export const rtcConfigAtom = atom(
+  (get) => get(appConfigAtom).rtc,
+  (get, set, newRtcConfig: RTCConfig) => {
+    const appConfig = get(appConfigAtom)
+    set(appConfigAtom, {
+      ...appConfig,
+      rtc: newRtcConfig
+    })
+  }
+)
+
 export const rtcStateAtom = atom<RTCState>({
   engine: null,
   isConnected: false,
@@ -414,18 +487,18 @@ export const voiceChatStateAtom = atomWithStorage<VoiceChatState>("voiceChatStat
 // RTC 操作原子
 export const rtcActionsAtom = atom(null, (get: Getter, set: Setter, action: RTCAction) => {
   const state = get(rtcStateAtom)
-  const config = get(rtcConfigAtom)
+  const config = get(appConfigAtom)
   const voiceChatState = get(voiceChatStateAtom)
 
   switch (action.type) {
     case 'INITIALIZE_ENGINE':
-      if (!config?.appId) {
+      if (!config?.rtc?.appId) {
         set(rtcStateAtom, { ...state, error: 'AppID is required' })
         return
       }
       
       try {
-        const engine = VERTC.createEngine(config.appId)
+        const engine = VERTC.createEngine(config.rtc.appId)
         
         // 监听事件
         engine.on(VERTC.events.onUserPublishStream, (e: {
@@ -482,9 +555,9 @@ export const rtcActionsAtom = atom(null, (get: Getter, set: Setter, action: RTCA
       }
       
       state.engine.joinRoom(
-        config.token,
-        config.roomId,
-        { userId: config.uid },
+        config.rtc.token,
+        config.rtc.roomId,
+        { userId: config.rtc.uid },
         {
           isAutoPublish: true,
           isAutoSubscribeAudio: true,
@@ -564,11 +637,29 @@ export const rtcActionsAtom = atom(null, (get: Getter, set: Setter, action: RTCA
         }))
         
         startVoiceChat({
-          appId: config.appId,
-          roomId: config.roomId,
-          targetUserId: config.uid,
-          systemMessage: action.systemMessage,
-          welcomeMessage: action.welcomeMessage
+          appId: config.rtc.appId,
+          roomId: config.rtc.roomId,
+          targetUserId: config.rtc.uid,
+          systemMessage: action.systemMessage || config.llm.systemMessage,
+          welcomeMessage: action.welcomeMessage || config.llm.welcomeMessage,
+          asr: {
+            appId: config.asr.appId,
+            accessToken: config.asr.accessToken,
+            mode: config.asr.mode
+          },
+          tts: {
+            appId: config.tts.appId,
+            accessToken: config.tts.accessToken,
+            voiceType: config.tts.voiceType,
+            speechRate: config.tts.speechRate,
+            pitchRate: config.tts.pitchRate
+          },
+          llm: {
+            endpointId: config.llm.endpointId,
+            temperature: config.llm.temperature,
+            maxTokens: config.llm.maxTokens,
+            topP: config.llm.topP
+          }
         }).then((result) => {
           if (result.success && result.taskId) {
             console.log('启动 AI 语音聊天成功')
@@ -608,7 +699,7 @@ export const rtcActionsAtom = atom(null, (get: Getter, set: Setter, action: RTCA
           error: null
         }))
         
-        stopVoiceChat(config.appId, config.roomId, voiceChatState.taskId).then((result) => {
+        stopVoiceChat(config.rtc.appId, config.rtc.roomId, voiceChatState.taskId).then((result) => {
           if (result.success) {
             console.log('停止 AI 语音聊天成功')
             set(voiceChatStateAtom, (prev) => ({
