@@ -149,7 +149,7 @@ export const Config: React.FC = () => {
                   <Label htmlFor="asr-mode">语音识别模式</Label>
                   <Select
                     value={config.asr.mode}
-                    onValueChange={(value) => bindKey("asr.mode")(value)}
+                    onValueChange={bindKey("asr.mode")}
                   >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="选择语音识别模式" />
