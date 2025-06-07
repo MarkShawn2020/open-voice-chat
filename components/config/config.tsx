@@ -86,7 +86,7 @@ export const Config: React.FC = () => {
                   label="App ID"
                   description="RTC 应用的唯一标识符"
                   placeholder="输入 RTC App ID"
-                  value={config.rtc.appId}
+                  value={config.rtc.appId || ""}
                   onChange={bindKey("rtc.appId")}
                   copyable
                 />
@@ -96,7 +96,7 @@ export const Config: React.FC = () => {
                     label="房间ID"
                     description="用户将要加入的房间"
                     placeholder="Room123"
-                    value={config.rtc.roomId}
+                    value={config.rtc.roomId || ""}
                     onChange={bindKey("rtc.roomId")}
                   />
 
@@ -104,7 +104,7 @@ export const Config: React.FC = () => {
                     label="用户ID"
                     description="当前用户的唯一标识"
                     placeholder="User123"
-                    value={config.rtc.uid}
+                    value={config.rtc.uid || ""}
                     onChange={bindKey("rtc.uid")}
                   />
                 </div>
@@ -113,7 +113,7 @@ export const Config: React.FC = () => {
                   label="Token"
                   description={generateTokenHint()}
                   placeholder="输入或生成 Token"
-                  value={config.rtc.token}
+                  value={config.rtc.token || ""}
                   onChange={bindKey("rtc.token")}
                   type="password"
                   copyable
@@ -164,7 +164,7 @@ export const Config: React.FC = () => {
                 <ConfigField
                   label="App ID"
                   placeholder="输入 ASR App ID"
-                  value={config.asr.appId}
+                  value={config.asr.appId || ""}
                   onChange={bindKey("asr.appId")}
                 />
 
@@ -172,7 +172,7 @@ export const Config: React.FC = () => {
                   <ConfigField
                     label="Cluster"
                     placeholder="默认：volcengine_streaming_common"
-                    value={config.asr.cluster}
+                    value={config.asr.cluster || ""}
                     onChange={bindKey("asr.cluster")}
                     description="控制台地址：https://console.volcengine.com/speech/service/16"
                   />
@@ -180,7 +180,7 @@ export const Config: React.FC = () => {
                   <ConfigField
                     label="Access Token"
                     placeholder="输入 Access Token"
-                    value={config.asr.accessToken}
+                    value={config.asr.accessToken || ""}
                     onChange={bindKey("asr.accessToken")}
                     type="password"
                     description="控制台地址：https://console.volcengine.com/speech/service/10011"
@@ -204,14 +204,14 @@ export const Config: React.FC = () => {
                 <ConfigField
                   label="App ID"
                   placeholder="输入 TTS App ID"
-                  value={config.tts.appId}
+                  value={config.tts.appId || ""}
                   onChange={bindKey("tts.appId")}
                 />
 
                 <ConfigField
                   label="Access Token"
                   placeholder="输入 TTS Access Token"
-                  value={config.tts.accessToken}
+                  value={config.tts.accessToken || ""}
                   onChange={bindKey("tts.accessToken")}
                   type="password"
                 />
@@ -228,7 +228,7 @@ export const Config: React.FC = () => {
                       label="声音类型"
                       description="选择 TTS 的音色"
                       placeholder="zh_male_qingshuangnanda_mars_bigtts"
-                      value={config.tts.voiceType}
+                      value={config.tts.voiceType || ""}
                       onChange={bindKey("tts.voiceType")}
                     />
 
@@ -281,7 +281,7 @@ export const Config: React.FC = () => {
                 label="Endpoint ID"
                 description="火山方舟大模型的端点标识符"
                 placeholder="输入 Endpoint ID (如: ep-20250603102226-lbgst)"
-                value={config.llm.endpointId}
+                value={config.llm.endpointId || ""}
                 onChange={bindKey("llm.endpointId")}
                 copyable
               />
@@ -333,7 +333,7 @@ export const Config: React.FC = () => {
                 <Textarea
                   id="systemMessage"
                   placeholder="你是一个友好的AI助手..."
-                  value={config.llm.systemMessage}
+                  value={config.llm.systemMessage || ""}
                   onChange={(e) => bindKey("llm.systemMessage")(e.target.value)}
                   className="min-h-[100px]"
                 />
@@ -343,7 +343,7 @@ export const Config: React.FC = () => {
                 label="欢迎消息"
                 description="用户开始对话时的第一句话"
                 placeholder="你好！我是你的AI助手，有什么可以帮助你的吗？"
-                value={config.llm.welcomeMessage}
+                value={config.llm.welcomeMessage || ""}
                 onChange={bindKey("llm.welcomeMessage")}
               />
             </CardContent>
