@@ -133,6 +133,7 @@ function handleSubtitleMessage(
 
       // 判断是否需要新增聊天记录
       const shouldCreateNew = !isSameUser || (isSameUser && lastMessage.isDefinite)
+      console.log("shouldCreateNew", {isSameUser, userId, isDefinite: lastMessage?.isDefinite, shouldCreateNew})
 
       if (shouldCreateNew) {
         // 新增聊天记录
@@ -142,9 +143,8 @@ function handleSubtitleMessage(
           role,
           content: text,
           timestamp: Date.now(),
-          userId: config.rtc.uid,
+          userId,
           roomId: config.rtc.roomId,
-          taskId: currentState.taskId || "default-task",
           isComplete: !!paragraph,
           isDefinite: !!definite,
         }

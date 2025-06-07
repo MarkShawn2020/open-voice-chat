@@ -10,7 +10,6 @@ export interface ChatMessage {
   timestamp: number
   userId: string
   roomId: string // 新增：房间ID
-  taskId: string // 新增：任务ID，用于关联特定的语音聊天会话
   isComplete: boolean // 消息是否完整
   isDefinite: boolean // 消息是否基于确定的语音识别结果
 }

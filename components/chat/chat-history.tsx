@@ -79,7 +79,7 @@ export const ChatHistory = () => {
           ) : (
             <div className="py-2">
               {displayMessages.map((message, index) => (
-                <React.Fragment key={message.id}>
+                <React.Fragment key={index}>
                   {shouldShowTimestamp(message, displayMessages[index - 1]) && (
                     <TimeStamp timestamp={message.timestamp} />
                   )}
