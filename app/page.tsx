@@ -3,8 +3,6 @@
 import { useAtom } from "jotai"
 import { MessageCircle, Sparkles } from "lucide-react"
 
-import { FloatingAudioControl } from "@/components/floating-audio-control"
-import { Navbar } from "@/components/navbar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -23,10 +21,7 @@ export default function Web() {
         }}
       />
       
-      <div className="relative min-h-screen flex flex-col">
-        {/* Navigation */}
-        <Navbar />
-        
+      <div className="relative min-h-screen flex flex-col">        
         {/* Main Content */}
         <main className="container mx-auto px-6 py-12">
           <div className="max-w-5xl mx-auto">
@@ -143,9 +138,6 @@ export default function Web() {
           </p>
         </footer>
       </div>
-
-      {/* Floating Audio Control */}
-      <FloatingAudioControl />
     </div>
   )
 }

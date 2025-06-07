@@ -2,8 +2,6 @@
 
 import { Phone } from "lucide-react"
 
-import { FloatingAudioControl } from "@/components/floating-audio-control"
-import { Navbar } from "@/components/navbar"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { VoiceCall } from "@/components/voice-call"
@@ -23,9 +21,7 @@ export default function PlaygroundPage() {
         </svg>
       </div>
 
-      <div className="relative z-10">
-        <Navbar />
-        
+      <div className="relative z-10">        
         <main className="container mx-auto px-6 py-12">
           {/* 页面标题 */}
           <div className="text-center mb-12">
@@ -100,8 +96,6 @@ export default function PlaygroundPage() {
             </Card>
           </div>
         </main>
-
-        <FloatingAudioControl />
       </div>
     </div>
   )

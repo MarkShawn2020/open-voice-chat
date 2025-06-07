@@ -5,6 +5,8 @@ import { SpeedInsights } from "@vercel/speed-insights/next"
 import { Metadata, Viewport } from "next"
 import { Inter } from "next/font/google"
 
+import { FloatingAudioControl } from "@/components/floating-audio-control"
+import { Navbar } from "@/components/navbar"
 import { Providers } from "@/components/providers"
 
 const inter = Inter({
@@ -134,6 +136,7 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <Providers>
+          <Navbar />
           <div className="relative flex min-h-screen flex-col">
             {/* Global Loading Indicator */}
             <div id="global-loading" className="hidden fixed inset-0 z-50 bg-white/80 backdrop-blur-sm">
@@ -146,6 +149,7 @@ export default function RootLayout({
             <main className="flex-1 relative">
               {children}
             </main>
+            <FloatingAudioControl />
           </div>
         </Providers>
         <Analytics />
