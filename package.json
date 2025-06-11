@@ -27,7 +27,7 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "dev": "cross-env FORCE_COLOR=1 next dev --turbo",
+    "dev": "cross-env FORCE_COLOR=1 next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
