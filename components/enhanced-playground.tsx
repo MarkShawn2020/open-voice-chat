@@ -422,6 +422,10 @@ export const EnhancedPlayground: React.FC = () => {
                             dispatchRtcAction({ type: "BIND_KEY", payload: { key: "tts.voiceType", value: voiceType } })
                             toast.success("音色已更新")
                           }}
+                          ttsConfig={{
+                            appId: appConfig.tts.appId,
+                            accessToken: appConfig.tts.accessToken
+                          }}
                         />
                       </div>
                     </CardContent>
@@ -457,6 +461,10 @@ export const EnhancedPlayground: React.FC = () => {
                           onChange={(voiceType) => 
                             dispatchRtcAction({ type: "BIND_KEY", payload: { key: "tts.voiceType", value: voiceType } })
                           }
+                          ttsConfig={{
+                            appId: appConfig.tts.appId,
+                            accessToken: appConfig.tts.accessToken
+                          }}
                         />
                       </div>
                       
