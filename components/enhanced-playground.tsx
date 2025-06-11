@@ -24,16 +24,20 @@ import {
   Bot,
   BotOff,
   CheckCircle,
+  MessageSquare,
   Mic,
   MicOff,
+  Monitor,
   Phone,
   PhoneOff,
   Play,
   RefreshCw,
+  Settings,
   TestTube,
   Users,
   Wifi,
   WifiOff,
+  X,
 } from "lucide-react"
 import React, { useEffect, useState } from "react"
 import { toast } from "sonner"
@@ -63,6 +67,7 @@ export const EnhancedPlayground: React.FC = () => {
   const [testResults, setTestResults] = useState<TestResult[]>([])
   const [debugLogs, setDebugLogs] = useState<string[]>([])
   const [activeTab, setActiveTab] = useState("control")
+  const [showFullConfig, setShowFullConfig] = useState(false)
 
   // 快速配置预设
   const [quickConfig, setQuickConfig] = useState({
@@ -248,166 +253,152 @@ export const EnhancedPlayground: React.FC = () => {
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-      <div className="container mx-auto h-full overflow-hidden p-4">
-        <div className="grid h-full grid-cols-1 gap-4 overflow-hidden xl:grid-cols-4">
-          {/* 详细配置 */}
-          <div className="overflow-y-auto space-y-4">
-                        <Card className="border-0 bg-white/90 shadow-lg backdrop-blur-sm">
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <TestTube className="h-5 w-5 text-blue-600" />
-                  调试控制台
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-                  <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="control">控制</TabsTrigger>
-                    <TabsTrigger value="config">配置</TabsTrigger>
-                    <TabsTrigger value="test">测试</TabsTrigger>
-                  </TabsList>
+      {/* 顶部状态栏 */}
+      <div className="border-b bg-white/90 backdrop-blur-sm">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <h1 className="text-xl font-semibold text-gray-800">语音对话测试台</h1>
+              <div className="flex items-center gap-4 text-sm">
+                <div className="flex items-center gap-2">
+                  {rtcState.isConnected ? (
+                    <Wifi className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <WifiOff className="h-4 w-4 text-gray-400" />
+                  )}
+                  <span className={rtcState.isConnected ? "text-green-600" : "text-gray-500"}>
+                    {rtcState.isConnected ? "已连接" : "未连接"}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {voiceChatState.isAgentActive ? (
+                    <Bot className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <BotOff className="h-4 w-4 text-gray-400" />
+                  )}
+                  <span className={voiceChatState.isAgentActive ? "text-green-600" : "text-gray-500"}>
+                    AI: {voiceChatState.isAgentActive ? "运行" : "停止"}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-blue-500" />
+                  <span className="text-blue-600">{rtcState.remoteUsers.length} 用户在线</span>
+                </div>
+              </div>
+            </div>
+            
+            {/* 主要操作按钮 */}
+            <div className="flex items-center gap-2">
+              {!rtcState.isConnected ? (
+                <Button onClick={handleJoinRoom} disabled={!config} size="sm">
+                  <Phone className="mr-2 h-4 w-4" />
+                  加入房间
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    onClick={toggleAudio}
+                    variant={rtcState.isLocalAudioEnabled ? "default" : "secondary"}
+                    size="sm"
+                  >
+                    {rtcState.isLocalAudioEnabled ? (
+                      <Mic className="mr-1 h-3 w-3" />
+                    ) : (
+                      <MicOff className="mr-1 h-3 w-3" />
+                    )}
+                    麦克风
+                  </Button>
+                  {!voiceChatState.isAgentActive ? (
+                    <Button
+                      onClick={handleStartVoiceChat}
+                      disabled={voiceChatState.isStarting}
+                      size="sm"
+                    >
+                      <Bot className="mr-2 h-4 w-4" />
+                      {voiceChatState.isStarting ? "启动中..." : "启动AI"}
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={handleStopVoiceChat}
+                      variant="destructive"
+                      disabled={voiceChatState.isStopping}
+                      size="sm"
+                    >
+                      <BotOff className="mr-2 h-4 w-4" />
+                      {voiceChatState.isStopping ? "停止中..." : "停止AI"}
+                    </Button>
+                  )}
+                  <Button onClick={handleLeaveRoom} variant="outline" size="sm">
+                    <PhoneOff className="mr-1 h-3 w-3" />
+                    离开房间
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+          
+          {/* 错误提示 */}
+          {(rtcState.error || voiceChatState.error) && (
+            <Alert variant="destructive" className="mt-3">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="text-sm">{rtcState.error || voiceChatState.error}</AlertDescription>
+            </Alert>
+          )}
+        </div>
+      </div>
 
-                  {/* 控制面板 */}
-                  <TabsContent value="control" className="space-y-4">
-                    {/* 连接状态 */}
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div className="flex items-center gap-2">
-                        {rtcState.isConnected ? (
-                          <Wifi className="h-4 w-4 text-green-500" />
-                        ) : (
-                          <WifiOff className="h-4 w-4 text-gray-400" />
-                        )}
-                        <span className={rtcState.isConnected ? "text-green-600" : "text-gray-500"}>
-                          {rtcState.isConnected ? "已连接" : "未连接"}
-                        </span>
-                      </div>
+      {/* 主要内容区域 */}
+      <div className="container mx-auto flex h-full overflow-hidden p-4">
+        <div className="flex h-full w-full gap-4">
+          {/* 左侧边栏 - 配置和控制 */}
+          <div className="w-80 flex-shrink-0 overflow-y-auto">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="control" className="flex items-center gap-1">
+                  <Bot className="h-3 w-3" />
+                  <span className="hidden sm:inline">AI控制</span>
+                </TabsTrigger>
+                <TabsTrigger value="config" className="flex items-center gap-1">
+                  <Settings className="h-3 w-3" />
+                  <span className="hidden sm:inline">配置</span>
+                </TabsTrigger>
+                <TabsTrigger value="debug" className="flex items-center gap-1">
+                  <Monitor className="h-3 w-3" />
+                  <span className="hidden sm:inline">调试</span>
+                </TabsTrigger>
+              </TabsList>
 
-                      <div className="flex items-center gap-2">
-                        {voiceChatState.isAgentActive ? (
-                          <Bot className="h-4 w-4 text-green-500" />
-                        ) : (
-                          <BotOff className="h-4 w-4 text-gray-400" />
-                        )}
-                        <span className={voiceChatState.isAgentActive ? "text-green-600" : "text-gray-500"}>
-                          AI: {voiceChatState.isAgentActive ? "运行" : "停止"}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        {rtcState.isLocalAudioEnabled ? (
-                          <Mic className="h-4 w-4 text-green-500" />
-                        ) : (
-                          <MicOff className="h-4 w-4 text-gray-400" />
-                        )}
-                        <span className={rtcState.isLocalAudioEnabled ? "text-green-600" : "text-gray-500"}>
-                          麦克风
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <Users className="h-4 w-4 text-blue-500" />
-                        <span className="text-blue-600">{rtcState.remoteUsers.length} 用户</span>
-                      </div>
-                    </div>
-
-                    {/* 控制按钮 */}
-                    <div className="space-y-2">
-                      {!rtcState.isConnected ? (
-                        <Button onClick={handleJoinRoom} className="w-full" disabled={!config}>
-                          <Phone className="mr-2 h-4 w-4" />
-                          加入房间
-                        </Button>
-                      ) : (
-                        <div className="space-y-2">
-                          <div className="grid grid-cols-2 gap-2">
-                            <Button
-                              onClick={toggleAudio}
-                              variant={rtcState.isLocalAudioEnabled ? "default" : "secondary"}
-                              size="sm"
-                            >
-                              {rtcState.isLocalAudioEnabled ? (
-                                <Mic className="mr-1 h-3 w-3" />
-                              ) : (
-                                <MicOff className="mr-1 h-3 w-3" />
-                              )}
-                              麦克风
-                            </Button>
-                            <Button onClick={handleLeaveRoom} variant="destructive" size="sm">
-                              <PhoneOff className="mr-1 h-3 w-3" />
-                              离开
-                            </Button>
-                          </div>
-
-                          {!voiceChatState.isAgentActive ? (
-                            <Button
-                              onClick={handleStartVoiceChat}
-                              className="w-full"
-                              disabled={voiceChatState.isStarting}
-                            >
-                              <Bot className="mr-2 h-4 w-4" />
-                              {voiceChatState.isStarting ? "启动中..." : "启动AI"}
-                            </Button>
-                          ) : (
-                            <Button
-                              onClick={handleStopVoiceChat}
-                              className="w-full"
-                              variant="destructive"
-                              disabled={voiceChatState.isStopping}
-                            >
-                              <BotOff className="mr-2 h-4 w-4" />
-                              {voiceChatState.isStopping ? "停止中..." : "停止AI"}
-                            </Button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* AI配置快速调整 */}
-                    <div className="space-y-3 border-t pt-3">
+              <div className="mt-4 space-y-4">
+                {/* AI控制面板 */}
+                <TabsContent value="control" className="mt-0 space-y-4">
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base">AI配置</CardTitle>
+                      <CardDescription className="text-sm">调整AI智能体的行为参数</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
                       <div className="space-y-2">
-                        <Label className="text-xs font-medium">系统消息</Label>
+                        <Label className="text-sm font-medium">系统消息</Label>
                         <Textarea
                           value={aiConfig.systemMessage}
                           onChange={(e) => setAiConfig({ ...aiConfig, systemMessage: e.target.value })}
-                          rows={2}
-                          className="text-xs"
+                          rows={3}
+                          className="text-sm"
+                          placeholder="定义AI的角色和行为..."
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-xs font-medium">欢迎消息</Label>
+                        <Label className="text-sm font-medium">欢迎消息</Label>
                         <Textarea
                           value={aiConfig.welcomeMessage}
                           onChange={(e) => setAiConfig({ ...aiConfig, welcomeMessage: e.target.value })}
-                          rows={1}
-                          className="text-xs"
+                          rows={2}
+                          className="text-sm"
+                          placeholder="AI的开场白..."
                         />
                       </div>
-                    </div>
-                  </TabsContent>
-
-                  {/* 快速配置面板 */}
-                  <TabsContent value="config" className="space-y-4">
-                    <div className="space-y-3">
                       <div className="space-y-2">
-                        <Label className="text-xs font-medium">ASR模式</Label>
-                        <Select
-                          value={quickConfig.asrMode}
-                          onValueChange={(value) =>
-                            setQuickConfig({ ...quickConfig, asrMode: value as "realtime" | "bigmodel" })
-                          }
-                        >
-                          <SelectTrigger className="h-8">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="realtime">流式识别</SelectItem>
-                            <SelectItem value="bigmodel">识别大模型</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label className="text-xs font-medium">LLM温度: {quickConfig.llmTemp}</Label>
+                        <Label className="text-sm font-medium">LLM温度: {quickConfig.llmTemp}</Label>
                         <Slider
                           value={[quickConfig.llmTemp]}
                           onValueChange={([value]: number[]) => setQuickConfig({ ...quickConfig, llmTemp: value! })}
@@ -416,119 +407,298 @@ export const EnhancedPlayground: React.FC = () => {
                           step={0.1}
                           className="w-full"
                         />
+                        <div className="flex justify-between text-xs text-gray-500">
+                          <span>保守</span>
+                          <span>创造性</span>
+                        </div>
                       </div>
+                    </CardContent>
+                  </Card>
 
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base">语音配置</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">ASR模式</Label>
+                        <Select
+                          value={quickConfig.asrMode}
+                          onValueChange={(value) =>
+                            setQuickConfig({ ...quickConfig, asrMode: value as "realtime" | "bigmodel" })
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="realtime">流式识别</SelectItem>
+                            <SelectItem value="bigmodel">识别大模型</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                       <Button onClick={applyQuickConfig} className="w-full" size="sm">
                         <RefreshCw className="mr-2 h-3 w-3" />
                         应用配置
                       </Button>
-                    </div>
-                  </TabsContent>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
 
-                  {/* 测试面板 */}
-                  <TabsContent value="test" className="space-y-4">
-                    <div className="space-y-2">
-                      {["rtc", "asr", "tts", "llm"].map((module) => {
-                        const result = testResults.find((t) => t.module === module)
-                        return (
-                          <div key={module} className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <div
-                                className="h-2 w-2 rounded-full bg-gray-300"
-                                style={{
-                                  backgroundColor:
-                                    result?.status === "success"
-                                      ? "#10b981"
-                                      : result?.status === "error"
-                                      ? "#ef4444"
-                                      : result?.status === "testing"
-                                      ? "#f59e0b"
-                                      : "#d1d5db",
-                                }}
+                {/* 详细配置面板 */}
+                <TabsContent value="config" className="mt-0">
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base">快速配置</CardTitle>
+                      <CardDescription className="text-sm">常用的配置参数</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {/* 快速 RTC 配置 */}
+                      <div className="space-y-3">
+                        <Label className="text-sm font-medium">RTC 连接</Label>
+                        <div className="space-y-2">
+                          <div className="space-y-1">
+                            <Label className="text-xs text-gray-600">App ID</Label>
+                            <input
+                              type="text"
+                              className="w-full rounded-md border px-3 py-1.5 text-sm"
+                              value={appConfig.rtc.appId || ""}
+                              onChange={(e) => dispatchRtcAction({ type: "BIND_KEY", payload: { key: "rtc.appId", value: e.target.value } })}
+                              placeholder="RTC App ID"
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="space-y-1">
+                              <Label className="text-xs text-gray-600">房间ID</Label>
+                              <input
+                                type="text"
+                                className="w-full rounded-md border px-2 py-1.5 text-xs"
+                                value={appConfig.rtc.roomId || ""}
+                                onChange={(e) => dispatchRtcAction({ type: "BIND_KEY", payload: { key: "rtc.roomId", value: e.target.value } })}
+                                placeholder="Room123"
                               />
-                              <span className="text-xs font-medium uppercase">{module}</span>
                             </div>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => runModuleTest(module)}
-                              disabled={result?.status === "testing"}
-                              className="h-6 px-2 text-xs"
-                            >
-                              <Play className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        )
-                      })}
-                    </div>
-
-                    {testResults.length > 0 && (
-                      <div className="max-h-32 space-y-1 overflow-y-auto">
-                        {testResults.slice(-5).map((result, idx) => (
-                          <div key={idx} className="rounded bg-gray-50 p-2 text-xs">
-                            <div className="flex items-center gap-1">
-                              {result.status === "success" && <CheckCircle className="h-3 w-3 text-green-500" />}
-                              {result.status === "error" && <AlertCircle className="h-3 w-3 text-red-500" />}
-                              <span className="font-medium">{result.module}</span>
+                            <div className="space-y-1">
+                              <Label className="text-xs text-gray-600">用户ID</Label>
+                              <input
+                                type="text"
+                                className="w-full rounded-md border px-2 py-1.5 text-xs"
+                                value={appConfig.rtc.uid || ""}
+                                onChange={(e) => dispatchRtcAction({ type: "BIND_KEY", payload: { key: "rtc.uid", value: e.target.value } })}
+                                placeholder="User123"
+                              />
                             </div>
-                            <div className="text-gray-600">{result.message}</div>
                           </div>
-                        ))}
+                        </div>
                       </div>
-                    )}
-                  </TabsContent>
-                </Tabs>
-              </CardContent>
-            </Card>
 
-            {/* 错误提示 */}
-            {(rtcState.error || voiceChatState.error) && (
-              <Alert variant="destructive" className="border-0 shadow-lg">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription className="text-sm">{rtcState.error || voiceChatState.error}</AlertDescription>
-              </Alert>
-            )}
+                      {/* ASR/TTS 快速配置 */}
+                      <div className="space-y-3 border-t pt-3">
+                        <Label className="text-sm font-medium">语音服务</Label>
+                        <div className="space-y-2">
+                          <div className="space-y-1">
+                            <Label className="text-xs text-gray-600">ASR App ID</Label>
+                            <input
+                              type="text"
+                              className="w-full rounded-md border px-3 py-1.5 text-sm"
+                              value={appConfig.asr.appId || ""}
+                              onChange={(e) => dispatchRtcAction({ type: "BIND_KEY", payload: { key: "asr.appId", value: e.target.value } })}
+                              placeholder="ASR App ID"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs text-gray-600">TTS App ID</Label>
+                            <input
+                              type="text"
+                              className="w-full rounded-md border px-3 py-1.5 text-sm"
+                              value={appConfig.tts.appId || ""}
+                              onChange={(e) => dispatchRtcAction({ type: "BIND_KEY", payload: { key: "tts.appId", value: e.target.value } })}
+                              placeholder="TTS App ID"
+                            />
+                          </div>
+                        </div>
+                      </div>
 
-            <Card className="border-0 bg-white/90 shadow-lg backdrop-blur-sm">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg">详细配置</CardTitle>
-                <CardDescription>完整的火山引擎参数配置</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Config />
-              </CardContent>
-            </Card>
+                      {/* LLM 快速配置 */}
+                      <div className="space-y-3 border-t pt-3">
+                        <Label className="text-sm font-medium">大模型配置</Label>
+                        <div className="space-y-2">
+                          <div className="space-y-1">
+                            <Label className="text-xs text-gray-600">Endpoint ID</Label>
+                            <input
+                              type="text"
+                              className="w-full rounded-md border px-3 py-1.5 text-sm"
+                              value={appConfig.llm.endpointId || ""}
+                              onChange={(e) => dispatchRtcAction({ type: "BIND_KEY", payload: { key: "llm.endpointId", value: e.target.value } })}
+                              placeholder="ep-xxxxx"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <Button 
+                        onClick={() => setShowFullConfig(true)} 
+                        variant="outline" 
+                        className="w-full" 
+                        size="sm"
+                      >
+                        <Settings className="mr-2 h-3 w-3" />
+                        查看完整配置
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                {/* 调试面板 */}
+                <TabsContent value="debug" className="mt-0 space-y-4">
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base">模块测试</CardTitle>
+                      <CardDescription className="text-sm">测试各个服务模块的连接状态</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {["rtc", "asr", "tts", "llm"].map((module) => {
+                          const result = testResults.find((t) => t.module === module)
+                          return (
+                            <div key={module} className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <div
+                                  className="h-2 w-2 rounded-full"
+                                  style={{
+                                    backgroundColor:
+                                      result?.status === "success"
+                                        ? "#10b981"
+                                        : result?.status === "error"
+                                        ? "#ef4444"
+                                        : result?.status === "testing"
+                                        ? "#f59e0b"
+                                        : "#d1d5db",
+                                  }}
+                                />
+                                <span className="text-sm font-medium uppercase">{module}</span>
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => runModuleTest(module)}
+                                disabled={result?.status === "testing"}
+                                className="h-7 px-2"
+                              >
+                                <Play className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          )
+                        })}
+                      </div>
+                      
+                      {testResults.length > 0 && (
+                        <div className="mt-4 max-h-40 space-y-2 overflow-y-auto">
+                          <Label className="text-sm font-medium">测试结果</Label>
+                          {testResults.slice(-5).map((result, idx) => (
+                            <div key={idx} className="rounded bg-gray-50 p-2">
+                              <div className="flex items-center gap-1">
+                                {result.status === "success" && <CheckCircle className="h-3 w-3 text-green-500" />}
+                                {result.status === "error" && <AlertCircle className="h-3 w-3 text-red-500" />}
+                                <span className="text-xs font-medium">{result.module}</span>
+                              </div>
+                              <div className="text-xs text-gray-600">{result.message}</div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base">错误诊断</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ErrorDiagnostics />
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              </div>
+            </Tabs>
           </div>
 
+          {/* 主要内容区域 */}
+          <div className="flex flex-1 gap-4">
+            {/* 对话记录 */}
+            <div className="flex-1">
+              <Card className="h-full">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <MessageSquare className="h-5 w-5 text-blue-600" />
+                    对话记录
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="h-full min-h-0">
+                  <div className="h-full overflow-y-auto">
+                    <ChatHistory />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
 
-          {/* 聊天记录 */}
-          <div className="overflow-y-auto">
-            <Card className="h-full border-0 bg-white/90 shadow-lg backdrop-blur-sm">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg">对话记录</CardTitle>
-              </CardHeader>
-              <CardContent className="h-full min-h-0">
-                <div className="h-full overflow-y-auto">
-                  <ChatHistory />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* 调试监控 */}
-          <div className="overflow-y-auto">
-            <DebugMonitor />
-          </div>
-
-          <div className="overflow-y-auto space-y-4">
-            {/* 智能诊断 */}
-            <ErrorDiagnostics />
-
-            {/* 模块测试 */}
-            <ModuleTester />
+            {/* 右侧监控面板 */}
+            <div className="w-80 flex-shrink-0">
+              <div className="h-full space-y-4">
+                <Card className="flex-1">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <Monitor className="h-4 w-4 text-green-600" />
+                      实时监控
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="h-full min-h-0">
+                    <div className="h-full overflow-y-auto">
+                      <DebugMonitor />
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">模块测试器</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ModuleTester />
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* 完整配置模态框 */}
+      {showFullConfig && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm">
+          <div className="flex h-full items-center justify-center p-4">
+            <div className="max-h-[90vh] w-full max-w-6xl overflow-hidden rounded-lg bg-white shadow-xl">
+              <div className="flex items-center justify-between border-b px-6 py-4">
+                <div>
+                  <h2 className="text-xl font-semibold">完整配置</h2>
+                  <p className="text-sm text-gray-600">火山引擎服务的详细配置参数</p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowFullConfig(false)}
+                  className="rounded-full"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="max-h-[calc(90vh-80px)] overflow-y-auto p-6">
+                <Config />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
