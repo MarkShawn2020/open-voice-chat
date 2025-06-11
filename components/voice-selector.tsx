@@ -1,0 +1,235 @@
+"use client"
+
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Play, Search, Volume2 } from "lucide-react"
+import React, { useEffect, useState } from "react"
+
+interface VoiceDetails {
+  demo_link: string
+  language: string
+  recommended_scenario: string
+  tone_number: string
+  voice_type: string
+}
+
+interface VoiceItem {
+  resource_display: string
+  details: VoiceDetails
+}
+
+interface VoiceSelectorProps {
+  value?: string
+  onChange?: (voiceType: string) => void
+  trigger?: React.ReactNode
+}
+
+export const VoiceSelector: React.FC<VoiceSelectorProps> = ({
+  value,
+  onChange,
+  trigger
+}) => {
+  const [voices, setVoices] = useState<VoiceItem[]>([])
+  const [filteredVoices, setFilteredVoices] = useState<VoiceItem[]>([])
+  const [searchTerm, setSearchTerm] = useState("")
+  const [selectedCategory, setSelectedCategory] = useState("all")
+  const [open, setOpen] = useState(false)
+  const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null)
+
+  // 加载音色数据
+  useEffect(() => {
+    const loadVoices = async () => {
+      try {
+        const response = await fetch('/data/preset-voices.json')
+        const data = await response.json()
+        setVoices(data)
+        setFilteredVoices(data)
+      } catch (error) {
+        console.error('Failed to load voices:', error)
+      }
+    }
+    loadVoices()
+  }, [])
+
+  // 筛选音色
+  useEffect(() => {
+    let filtered = voices
+
+    // 按搜索词筛选
+    if (searchTerm) {
+      filtered = filtered.filter(voice =>
+        voice.resource_display.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        voice.details.recommended_scenario.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    }
+
+    // 按分类筛选
+    if (selectedCategory !== "all") {
+      filtered = filtered.filter(voice => 
+        voice.details.recommended_scenario === selectedCategory
+      )
+    }
+
+    setFilteredVoices(filtered)
+  }, [voices, searchTerm, selectedCategory])
+
+  // 获取所有分类
+  const categories = React.useMemo(() => {
+    const cats = new Set(voices.map(v => v.details.recommended_scenario))
+    return Array.from(cats).sort()
+  }, [voices])
+
+  // 播放音色示例
+  const playVoiceDemo = (demoLink: string, voiceName: string) => {
+    // 停止当前播放的音频
+    if (currentAudio) {
+      currentAudio.pause()
+      currentAudio.currentTime = 0
+    }
+
+    try {
+      const audio = new Audio(demoLink)
+      setCurrentAudio(audio)
+      
+      audio.addEventListener('ended', () => {
+        setCurrentAudio(null)
+      })
+      
+      audio.addEventListener('error', () => {
+        console.error(`Failed to play demo for ${voiceName}`)
+        setCurrentAudio(null)
+      })
+
+      audio.play().catch((error) => {
+        console.error(`Failed to play demo for ${voiceName}:`, error)
+        setCurrentAudio(null)
+      })
+    } catch (error) {
+      console.error(`Error creating audio for ${voiceName}:`, error)
+    }
+  }
+
+  // 选择音色
+  const selectVoice = (voiceType: string) => {
+    onChange?.(voiceType)
+    setOpen(false)
+  }
+
+  // 获取当前选中音色的显示名称
+  const getSelectedVoiceName = () => {
+    if (!value) return "选择音色"
+    const selectedVoice = voices.find(v => v.details.voice_type === value)
+    return selectedVoice?.resource_display || value
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        {trigger || (
+          <Button variant="outline" className="w-full justify-between">
+            <span className="flex items-center gap-2">
+              <Volume2 className="h-4 w-4" />
+              {getSelectedVoiceName()}
+            </span>
+          </Button>
+        )}
+      </DialogTrigger>
+      <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden">
+        <DialogHeader>
+          <DialogTitle>选择音色</DialogTitle>
+        </DialogHeader>
+        
+        <div className="space-y-4">
+          {/* 搜索和筛选 */}
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <Input
+                  placeholder="搜索音色名称或场景..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* 分类标签 */}
+          <Tabs value={selectedCategory} onValueChange={setSelectedCategory}>
+            <TabsList className="grid-cols-auto w-full justify-start overflow-x-auto">
+              <TabsTrigger value="all">全部</TabsTrigger>
+              {categories.map(category => (
+                <TabsTrigger key={category} value={category}>
+                  {category}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+
+            <TabsContent value={selectedCategory} className="mt-4">
+              {/* 音色列表 */}
+              <div className="max-h-[50vh] space-y-2 overflow-y-auto">
+                {filteredVoices.length === 0 ? (
+                  <div className="py-8 text-center text-gray-500">
+                    没有找到匹配的音色
+                  </div>
+                ) : (
+                  filteredVoices.map((voice) => (
+                    <Card 
+                      key={voice.details.voice_type}
+                      className={`cursor-pointer transition-colors hover:bg-gray-50 ${
+                        value === voice.details.voice_type ? 'border-blue-500 bg-blue-50' : ''
+                      }`}
+                      onClick={() => selectVoice(voice.details.voice_type)}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3">
+                              <div>
+                                <h4 className="font-medium">{voice.resource_display}</h4>
+                                <div className="flex items-center gap-2 text-sm text-gray-600">
+                                  <span>{voice.details.language}</span>
+                                  <span>•</span>
+                                  <span>{voice.details.recommended_scenario}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center gap-2">
+                            {voice.details.demo_link && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  playVoiceDemo(voice.details.demo_link, voice.resource_display)
+                                }}
+                                disabled={currentAudio !== null}
+                              >
+                                <Play className="h-4 w-4" />
+                              </Button>
+                            )}
+                            
+                            {value === voice.details.voice_type && (
+                              <div className="h-2 w-2 rounded-full bg-blue-500" />
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}

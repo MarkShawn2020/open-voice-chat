@@ -5,6 +5,7 @@ import { Config } from "@/components/config/config"
 import { DebugMonitor } from "@/components/debug-monitor"
 import { ErrorDiagnostics } from "@/components/error-diagnostics"
 import { ModuleTester } from "@/components/module-tester"
+import { VoiceSelector } from "@/components/voice-selector"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -412,6 +413,17 @@ export const EnhancedPlayground: React.FC = () => {
                           <span>创造性</span>
                         </div>
                       </div>
+                      
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">AI音色</Label>
+                        <VoiceSelector
+                          value={appConfig.tts.voiceType}
+                          onChange={(voiceType) => {
+                            dispatchRtcAction({ type: "BIND_KEY", payload: { key: "tts.voiceType", value: voiceType } })
+                            toast.success("音色已更新")
+                          }}
+                        />
+                      </div>
                     </CardContent>
                   </Card>
 
@@ -437,6 +449,17 @@ export const EnhancedPlayground: React.FC = () => {
                           </SelectContent>
                         </Select>
                       </div>
+                      
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">TTS音色</Label>
+                        <VoiceSelector
+                          value={appConfig.tts.voiceType}
+                          onChange={(voiceType) => 
+                            dispatchRtcAction({ type: "BIND_KEY", payload: { key: "tts.voiceType", value: voiceType } })
+                          }
+                        />
+                      </div>
+                      
                       <Button onClick={applyQuickConfig} className="w-full" size="sm">
                         <RefreshCw className="mr-2 h-3 w-3" />
                         应用配置
