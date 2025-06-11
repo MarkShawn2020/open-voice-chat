@@ -36,9 +36,17 @@ export const ErrorDiagnostics: React.FC = () => {
   const [appConfig] = useAtom(appConfigAtom)
   const [rtcState] = useAtom(rtcStateAtom)
   const [voiceChatState] = useAtom(voiceChatStateAtom)
+  const [isClient, setIsClient] = useState(false)
+
+  // 确保在客户端渲染
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
 
   // 智能诊断逻辑
   const diagnosticIssues = useMemo(() => {
+    if (!isClient) return []
+    
     const issues: DiagnosticIssue[] = []
 
     // RTC配置检查
@@ -228,7 +236,7 @@ export const ErrorDiagnostics: React.FC = () => {
     }
 
     return issues
-  }, [appConfig, rtcState.error, voiceChatState.error])
+  }, [isClient, appConfig, rtcState.error, voiceChatState.error])
 
   const getSeverityIcon = (severity: DiagnosticIssue["severity"]) => {
     switch (severity) {
@@ -257,6 +265,21 @@ export const ErrorDiagnostics: React.FC = () => {
 
   const errorCount = diagnosticIssues.filter(i => i.severity === "error").length
   const warningCount = diagnosticIssues.filter(i => i.severity === "warning").length
+
+  // 防止服务端渲染不匹配
+  if (!isClient) {
+    return (
+      <Card className="border-0 shadow-lg bg-white/90 backdrop-blur-sm">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Brain className="h-5 w-5 text-blue-600" />
+            智能诊断
+          </CardTitle>
+          <CardDescription>正在加载...</CardDescription>
+        </CardHeader>
+      </Card>
+    )
+  }
 
   return (
     <Card className="border-0 shadow-lg bg-white/90 backdrop-blur-sm">

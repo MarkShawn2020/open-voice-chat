@@ -44,6 +44,12 @@ export const DebugMonitor: React.FC = () => {
   const [appConfig] = useAtom(appConfigAtom)
   const [rtcState] = useAtom(rtcStateAtom)
   const [voiceChatState] = useAtom(voiceChatStateAtom)
+  const [isClient, setIsClient] = useState(false)
+
+  // 确保在客户端渲染
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
 
   const [logs, setLogs] = useState<LogEntry[]>([])
   const [filteredLogs, setFilteredLogs] = useState<LogEntry[]>([])

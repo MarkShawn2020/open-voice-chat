@@ -51,6 +51,12 @@ export const EnhancedPlayground: React.FC = () => {
   const [rtcState] = useAtom(rtcStateAtom)
   const [voiceChatState] = useAtom(voiceChatStateAtom)
   const [, dispatchRtcAction] = useAtom(rtcActionsAtom)
+  const [isClient, setIsClient] = useState(false)
+
+  // 确保在客户端渲染
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
 
   // 调试状态
   const [testResults, setTestResults] = useState<TestResult[]>([])
@@ -228,6 +234,17 @@ export const EnhancedPlayground: React.FC = () => {
   const handleStopVoiceChat = () => {
     addDebugLog("停止AI智能体")
     dispatchRtcAction({ type: "STOP_VOICE_CHAT" })
+  }
+
+  // 防止服务端渲染不匹配
+  if (!isClient) {
+    return (
+      <div className="flex h-full w-full flex-col overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+        <div className="container mx-auto h-full p-4 overflow-hidden flex items-center justify-center">
+          <div className="text-gray-500">Loading...</div>
+        </div>
+      </div>
+    )
   }
 
   return (

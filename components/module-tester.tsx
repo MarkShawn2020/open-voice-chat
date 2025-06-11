@@ -16,7 +16,7 @@ import {
   Volume2,
   Wifi
 } from "lucide-react"
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
 import { toast } from "sonner"
 
 interface TestResult {
@@ -37,6 +37,12 @@ interface ModuleTest {
 
 export const ModuleTester: React.FC = () => {
   const [appConfig] = useAtom(appConfigAtom)
+  const [isClient, setIsClient] = useState(false)
+  
+  // 确保在客户端渲染
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
   
   const [tests, setTests] = useState<ModuleTest[]>([
     {
@@ -307,6 +313,18 @@ export const ModuleTester: React.FC = () => {
     if (test.result?.success) return "text-green-600"
     if (test.result?.success === false) return "text-red-600"
     return "text-gray-500"
+  }
+
+  // 防止服务端渲染不匹配
+  if (!isClient) {
+    return (
+      <Card className="border-0 shadow-lg bg-white/90 backdrop-blur-sm">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">模块测试</CardTitle>
+          <CardDescription>正在加载...</CardDescription>
+        </CardHeader>
+      </Card>
+    )
   }
 
   return (
