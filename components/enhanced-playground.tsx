@@ -19,21 +19,21 @@ import { rtcConfigAtom } from "@/store/rtc-config"
 import { rtcStateAtom } from "@/store/rtc-state"
 import { voiceChatStateAtom } from "@/store/voice-chat-state"
 import { useAtom } from "jotai"
-import { 
-  AlertCircle, 
-  Bot, 
-  BotOff, 
+import {
+  AlertCircle,
+  Bot,
+  BotOff,
   CheckCircle,
-  Mic, 
-  MicOff, 
-  Phone, 
-  PhoneOff, 
+  Mic,
+  MicOff,
+  Phone,
+  PhoneOff,
   Play,
   RefreshCw,
   TestTube,
-  Users, 
+  Users,
   Wifi,
-  WifiOff
+  WifiOff,
 } from "lucide-react"
 import React, { useEffect, useState } from "react"
 import { toast } from "sonner"
@@ -42,7 +42,8 @@ interface TestResult {
   module: string
   status: "success" | "error" | "testing"
   message: string
-  timestamp: number
+  startTime: number
+  duration?: number
 }
 
 export const EnhancedPlayground: React.FC = () => {
@@ -62,7 +63,7 @@ export const EnhancedPlayground: React.FC = () => {
   const [testResults, setTestResults] = useState<TestResult[]>([])
   const [debugLogs, setDebugLogs] = useState<string[]>([])
   const [activeTab, setActiveTab] = useState("control")
-  
+
   // 快速配置预设
   const [quickConfig, setQuickConfig] = useState({
     scenario: "default",
@@ -80,19 +81,20 @@ export const EnhancedPlayground: React.FC = () => {
   // 添加调试日志
   const addDebugLog = (message: string) => {
     const timestamp = new Date().toLocaleTimeString()
-    setDebugLogs(prev => [...prev.slice(-49), `[${timestamp}] ${message}`])
+    setDebugLogs((prev) => [...prev.slice(-49), `[${timestamp}] ${message}`])
   }
 
   // 运行模块测试
   const runModuleTest = async (module: string) => {
+    const startTime = Date.now()
     const newTest: TestResult = {
       module,
       status: "testing",
       message: "正在测试...",
-      timestamp: Date.now()
+      startTime,
     }
-    
-    setTestResults(prev => prev.filter(t => t.module !== module).concat(newTest))
+
+    setTestResults((prev) => prev.filter((t) => t.module !== module).concat(newTest))
     addDebugLog(`开始测试 ${module}`)
 
     try {
@@ -102,53 +104,50 @@ export const EnhancedPlayground: React.FC = () => {
             throw new Error("RTC配置不完整")
           }
           // 这里可以添加实际的RTC连接测试
-          setTestResults(prev => prev.map(t => 
-            t.module === module 
-              ? { ...t, status: "success", message: "RTC配置验证通过" }
-              : t
-          ))
+          setTestResults((prev) =>
+            prev.map((t) => (t.module === module ? { ...t, status: "success", message: "RTC配置验证通过" } : t))
+          )
           break
-          
+
         case "asr":
           if (!appConfig.asr.appId || !appConfig.asr.accessToken) {
             throw new Error("ASR配置不完整")
           }
-          setTestResults(prev => prev.map(t => 
-            t.module === module 
-              ? { ...t, status: "success", message: "ASR配置验证通过" }
-              : t
-          ))
+          setTestResults((prev) =>
+            prev.map((t) => (t.module === module ? { ...t, status: "success", message: "ASR配置验证通过" } : t))
+          )
           break
-          
+
         case "tts":
           if (!appConfig.tts.appId || !appConfig.tts.accessToken) {
             throw new Error("TTS配置不完整")
           }
-          setTestResults(prev => prev.map(t => 
-            t.module === module 
-              ? { ...t, status: "success", message: "TTS配置验证通过" }
-              : t
-          ))
+          setTestResults((prev) =>
+            prev.map((t) => (t.module === module ? { ...t, status: "success", message: "TTS配置验证通过" } : t))
+          )
           break
-          
+
         case "llm":
           if (!appConfig.llm.endpointId) {
             throw new Error("LLM配置不完整")
           }
-          setTestResults(prev => prev.map(t => 
-            t.module === module 
-              ? { ...t, status: "success", message: "LLM配置验证通过" }
-              : t
-          ))
+          setTestResults((prev) =>
+            prev.map((t) => (t.module === module ? { ...t, status: "success", message: "LLM配置验证通过" } : t))
+          )
           break
       }
+      const duration = Date.now() - startTime
+      setTestResults((prev) => prev.map((t) => (t.module === module ? { ...t, status: "success", duration } : t)))
       addDebugLog(`${module} 测试通过`)
     } catch (error) {
-      setTestResults(prev => prev.map(t => 
-        t.module === module 
-          ? { ...t, status: "error", message: error instanceof Error ? error.message : "测试失败" }
-          : t
-      ))
+      const duration = Date.now() - startTime
+      setTestResults((prev) =>
+        prev.map((t) =>
+          t.module === module
+            ? { ...t, status: "error", message: error instanceof Error ? error.message : "测试失败", duration }
+            : t
+        )
+      )
       addDebugLog(`${module} 测试失败: ${error}`)
     }
   }
@@ -156,11 +155,11 @@ export const EnhancedPlayground: React.FC = () => {
   // 快速应用配置
   const applyQuickConfig = () => {
     const bindKey = (key: string) => (value: string) => dispatchRtcAction({ type: "BIND_KEY", payload: { key, value } })
-    
+
     bindKey("asr.mode")(quickConfig.asrMode)
     bindKey("tts.voiceType")(quickConfig.ttsVoice)
     bindKey("llm.temperature")(quickConfig.llmTemp.toString())
-    
+
     addDebugLog("应用快速配置")
     toast.success("配置已更新")
   }
@@ -240,7 +239,7 @@ export const EnhancedPlayground: React.FC = () => {
   if (!isClient) {
     return (
       <div className="flex h-full w-full flex-col overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-        <div className="container mx-auto h-full p-4 overflow-hidden flex items-center justify-center">
+        <div className="container mx-auto flex h-full items-center justify-center overflow-hidden p-4">
           <div className="text-gray-500">Loading...</div>
         </div>
       </div>
@@ -249,12 +248,11 @@ export const EnhancedPlayground: React.FC = () => {
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-      <div className="container mx-auto h-full p-4 overflow-hidden">
+      <div className="container mx-auto h-full overflow-hidden p-4">
         <div className="grid h-full grid-cols-1 gap-4 overflow-hidden xl:grid-cols-4">
-          
-          {/* 左侧：快速控制和配置 */}
-          <div className="space-y-4 overflow-y-auto">
-            <Card className="border-0 shadow-lg bg-white/90 backdrop-blur-sm">
+          {/* 详细配置 */}
+          <div className="overflow-y-auto space-y-4">
+                        <Card className="border-0 bg-white/90 shadow-lg backdrop-blur-sm">
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <TestTube className="h-5 w-5 text-blue-600" />
@@ -283,7 +281,7 @@ export const EnhancedPlayground: React.FC = () => {
                           {rtcState.isConnected ? "已连接" : "未连接"}
                         </span>
                       </div>
-                      
+
                       <div className="flex items-center gap-2">
                         {voiceChatState.isAgentActive ? (
                           <Bot className="h-4 w-4 text-green-500" />
@@ -294,7 +292,7 @@ export const EnhancedPlayground: React.FC = () => {
                           AI: {voiceChatState.isAgentActive ? "运行" : "停止"}
                         </span>
                       </div>
-                      
+
                       <div className="flex items-center gap-2">
                         {rtcState.isLocalAudioEnabled ? (
                           <Mic className="h-4 w-4 text-green-500" />
@@ -305,12 +303,10 @@ export const EnhancedPlayground: React.FC = () => {
                           麦克风
                         </span>
                       </div>
-                      
+
                       <div className="flex items-center gap-2">
                         <Users className="h-4 w-4 text-blue-500" />
-                        <span className="text-blue-600">
-                          {rtcState.remoteUsers.length} 用户
-                        </span>
+                        <span className="text-blue-600">{rtcState.remoteUsers.length} 用户</span>
                       </div>
                     </div>
 
@@ -341,7 +337,7 @@ export const EnhancedPlayground: React.FC = () => {
                               离开
                             </Button>
                           </div>
-                          
+
                           {!voiceChatState.isAgentActive ? (
                             <Button
                               onClick={handleStartVoiceChat}
@@ -372,7 +368,7 @@ export const EnhancedPlayground: React.FC = () => {
                         <Label className="text-xs font-medium">系统消息</Label>
                         <Textarea
                           value={aiConfig.systemMessage}
-                          onChange={(e) => setAiConfig({...aiConfig, systemMessage: e.target.value})}
+                          onChange={(e) => setAiConfig({ ...aiConfig, systemMessage: e.target.value })}
                           rows={2}
                           className="text-xs"
                         />
@@ -381,7 +377,7 @@ export const EnhancedPlayground: React.FC = () => {
                         <Label className="text-xs font-medium">欢迎消息</Label>
                         <Textarea
                           value={aiConfig.welcomeMessage}
-                          onChange={(e) => setAiConfig({...aiConfig, welcomeMessage: e.target.value})}
+                          onChange={(e) => setAiConfig({ ...aiConfig, welcomeMessage: e.target.value })}
                           rows={1}
                           className="text-xs"
                         />
@@ -394,9 +390,12 @@ export const EnhancedPlayground: React.FC = () => {
                     <div className="space-y-3">
                       <div className="space-y-2">
                         <Label className="text-xs font-medium">ASR模式</Label>
-                        <Select value={quickConfig.asrMode} onValueChange={(value) => 
-                          setQuickConfig({...quickConfig, asrMode: value as "realtime" | "bigmodel"})
-                        }>
+                        <Select
+                          value={quickConfig.asrMode}
+                          onValueChange={(value) =>
+                            setQuickConfig({ ...quickConfig, asrMode: value as "realtime" | "bigmodel" })
+                          }
+                        >
                           <SelectTrigger className="h-8">
                             <SelectValue />
                           </SelectTrigger>
@@ -411,7 +410,7 @@ export const EnhancedPlayground: React.FC = () => {
                         <Label className="text-xs font-medium">LLM温度: {quickConfig.llmTemp}</Label>
                         <Slider
                           value={[quickConfig.llmTemp]}
-                          onValueChange={([value]: number[]) => setQuickConfig({...quickConfig, llmTemp: value!})}
+                          onValueChange={([value]: number[]) => setQuickConfig({ ...quickConfig, llmTemp: value! })}
                           min={0}
                           max={2}
                           step={0.1}
@@ -430,16 +429,23 @@ export const EnhancedPlayground: React.FC = () => {
                   <TabsContent value="test" className="space-y-4">
                     <div className="space-y-2">
                       {["rtc", "asr", "tts", "llm"].map((module) => {
-                        const result = testResults.find(t => t.module === module)
+                        const result = testResults.find((t) => t.module === module)
                         return (
                           <div key={module} className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 rounded-full bg-gray-300" 
-                                   style={{
-                                     backgroundColor: result?.status === "success" ? "#10b981" : 
-                                                    result?.status === "error" ? "#ef4444" : 
-                                                    result?.status === "testing" ? "#f59e0b" : "#d1d5db"
-                                   }} />
+                              <div
+                                className="h-2 w-2 rounded-full bg-gray-300"
+                                style={{
+                                  backgroundColor:
+                                    result?.status === "success"
+                                      ? "#10b981"
+                                      : result?.status === "error"
+                                      ? "#ef4444"
+                                      : result?.status === "testing"
+                                      ? "#f59e0b"
+                                      : "#d1d5db",
+                                }}
+                              />
                               <span className="text-xs font-medium uppercase">{module}</span>
                             </div>
                             <Button
@@ -457,9 +463,9 @@ export const EnhancedPlayground: React.FC = () => {
                     </div>
 
                     {testResults.length > 0 && (
-                      <div className="space-y-1 max-h-32 overflow-y-auto">
+                      <div className="max-h-32 space-y-1 overflow-y-auto">
                         {testResults.slice(-5).map((result, idx) => (
-                          <div key={idx} className="text-xs p-2 rounded bg-gray-50">
+                          <div key={idx} className="rounded bg-gray-50 p-2 text-xs">
                             <div className="flex items-center gap-1">
                               {result.status === "success" && <CheckCircle className="h-3 w-3 text-green-500" />}
                               {result.status === "error" && <AlertCircle className="h-3 w-3 text-red-500" />}
@@ -475,50 +481,15 @@ export const EnhancedPlayground: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* 调试日志 */}
-            <Card className="border-0 shadow-lg bg-white/90 backdrop-blur-sm">
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm">调试日志</CardTitle>
-                  <Button size="sm" variant="ghost" onClick={() => setDebugLogs([])}>
-                    清空
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="max-h-32 overflow-y-auto space-y-1">
-                  {debugLogs.slice(-10).map((log, idx) => (
-                    <div key={idx} className="text-xs font-mono text-gray-600 p-1 bg-gray-50 rounded">
-                      {log}
-                    </div>
-                  ))}
-                  {debugLogs.length === 0 && (
-                    <div className="text-xs text-gray-400 italic">暂无日志</div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* 模块测试 */}
-            <ModuleTester />
-
-            {/* 智能诊断 */}
-            <ErrorDiagnostics />
-
             {/* 错误提示 */}
             {(rtcState.error || voiceChatState.error) && (
               <Alert variant="destructive" className="border-0 shadow-lg">
                 <AlertCircle className="h-4 w-4" />
-                <AlertDescription className="text-sm">
-                  {rtcState.error || voiceChatState.error}
-                </AlertDescription>
+                <AlertDescription className="text-sm">{rtcState.error || voiceChatState.error}</AlertDescription>
               </Alert>
             )}
-          </div>
 
-          {/* 中间：详细配置 */}
-          <div className="overflow-y-auto">
-            <Card className="border-0 shadow-lg bg-white/90 backdrop-blur-sm">
+            <Card className="border-0 bg-white/90 shadow-lg backdrop-blur-sm">
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg">详细配置</CardTitle>
                 <CardDescription>完整的火山引擎参数配置</CardDescription>
@@ -529,14 +500,10 @@ export const EnhancedPlayground: React.FC = () => {
             </Card>
           </div>
 
-          {/* 右侧：调试监控 */}
-          <div className="overflow-y-auto">
-            <DebugMonitor />
-          </div>
 
-          {/* 最右侧：聊天记录 */}
+          {/* 聊天记录 */}
           <div className="overflow-y-auto">
-            <Card className="border-0 shadow-lg bg-white/90 backdrop-blur-sm h-full">
+            <Card className="h-full border-0 bg-white/90 shadow-lg backdrop-blur-sm">
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg">对话记录</CardTitle>
               </CardHeader>
@@ -546,6 +513,19 @@ export const EnhancedPlayground: React.FC = () => {
                 </div>
               </CardContent>
             </Card>
+          </div>
+
+          {/* 调试监控 */}
+          <div className="overflow-y-auto">
+            <DebugMonitor />
+          </div>
+
+          <div className="overflow-y-auto space-y-4">
+            {/* 智能诊断 */}
+            <ErrorDiagnostics />
+
+            {/* 模块测试 */}
+            <ModuleTester />
           </div>
         </div>
       </div>

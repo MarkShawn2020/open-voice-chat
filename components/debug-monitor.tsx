@@ -59,9 +59,11 @@ export const DebugMonitor: React.FC = () => {
 
   // 添加日志条目
   const addLog = (level: LogEntry["level"], category: LogEntry["category"], message: string, details?: Record<string, unknown>) => {
+    const timestamp = Date.now()
+    const randomSuffix = Math.random().toString(36).substring(2, 8)
     const newLog: LogEntry = {
-      id: Date.now().toString(),
-      timestamp: Date.now(),
+      id: `${timestamp}-${randomSuffix}`,
+      timestamp,
       level,
       category,
       message,
