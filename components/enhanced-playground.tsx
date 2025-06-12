@@ -5,10 +5,10 @@ import { DebugMonitor } from "@/components/debug-monitor"
 import { ErrorDiagnostics } from "@/components/error-diagnostics"
 import { ModuleTester } from "@/components/module-tester"
 import { PersonDetection } from "@/components/person-detection"
+import { PersonDetectionCard } from "@/components/person-detection/person-detection-card"
 import { AIControlPanel } from "@/components/playground/ai-control-panel"
 import { CameraPreview } from "@/components/playground/camera-preview"
 import { ConfigModal } from "@/components/playground/config-modal"
-import { DebugPanel } from "@/components/playground/debug-panel"
 import { MainControls } from "@/components/playground/main-controls"
 import { QuickConfigPanel } from "@/components/playground/quick-config-panel"
 import { StatusBar } from "@/components/playground/status-bar"
@@ -24,14 +24,9 @@ import { rtcStateAtom } from "@/store/rtc-state"
 import { voiceChatStateAtom } from "@/store/voice-chat-state"
 import { motion, useAnimation } from "framer-motion"
 import { useAtom } from "jotai"
-import {
-  Bot,
-  Monitor,
-  Settings,
-} from "lucide-react"
+import { Bot, Monitor, Settings } from "lucide-react"
 import React, { useEffect, useState } from "react"
 import { toast } from "sonner"
-
 
 export const EnhancedPlayground: React.FC = () => {
   const [appConfig] = useAtom(appConfigAtom)
@@ -48,15 +43,15 @@ export const EnhancedPlayground: React.FC = () => {
   // 确保在客户端渲染
   useEffect(() => {
     setIsClient(true)
-    
+
     // 设置拖拽约束
     const updateConstraints = () => {
-      if (typeof window !== 'undefined') {
+      if (typeof window !== "undefined") {
         const windowWidth = window.innerWidth
         const windowHeight = window.innerHeight
         const elementWidth = 256 // w-64 = 256px
         const elementHeight = 300 // 大约高度
-        
+
         setDragConstraints({
           top: -windowHeight + elementHeight - 80, // 保留80px底部空间给控制栏
           left: -windowWidth + elementWidth,
@@ -65,13 +60,13 @@ export const EnhancedPlayground: React.FC = () => {
         })
       }
     }
-    
+
     updateConstraints()
-    window.addEventListener('resize', updateConstraints)
-    
+    window.addEventListener("resize", updateConstraints)
+
     return () => {
-      if (typeof window !== 'undefined') {
-        window.removeEventListener('resize', updateConstraints)
+      if (typeof window !== "undefined") {
+        window.removeEventListener("resize", updateConstraints)
       }
     }
   }, [])
@@ -96,10 +91,10 @@ export const EnhancedPlayground: React.FC = () => {
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null)
   const [cameraError, setCameraError] = useState<string | null>(null)
   const [videoRef, setVideoRef] = useState<HTMLVideoElement | null>(null)
-  
+
   // 人员检测状态
   const [isPersonDetectionEnabled, setIsPersonDetectionEnabled] = useState(false)
-  
+
   // 当前选择的摄像头设备ID
   const [selectedCameraId, setSelectedCameraId] = useState<string>("")
   const [personDetectionConfig, setPersonDetectionConfig] = useState({
@@ -110,14 +105,14 @@ export const EnhancedPlayground: React.FC = () => {
     attentionSensitivity: 0.7,
     interactionSensitivity: 0.5,
     enableFaceRecognition: true,
-    enablePoseDetection: true
+    enablePoseDetection: true,
   })
   const [personDetectionStats, setPersonDetectionStats] = useState({
     totalDetections: 0,
     averageStayDuration: 0,
     maxSimultaneousPersons: 0,
     lookingAtCameraCount: 0,
-    interactingCount: 0
+    interactingCount: 0,
   })
   const [dragConstraints, setDragConstraints] = useState({
     top: 0,
@@ -161,7 +156,15 @@ export const EnhancedPlayground: React.FC = () => {
           }
           // 这里可以添加实际的RTC连接测试
           setTestResults((prev) =>
-            prev.map((t) => (t.module === module ? { ...t, status: "success", message: "RTC配置验证通过" } : t))
+            prev.map((t) =>
+              t.module === module
+                ? {
+                    ...t,
+                    status: "success",
+                    message: "RTC配置验证通过",
+                  }
+                : t
+            )
           )
           break
 
@@ -170,7 +173,15 @@ export const EnhancedPlayground: React.FC = () => {
             throw new Error("ASR配置不完整")
           }
           setTestResults((prev) =>
-            prev.map((t) => (t.module === module ? { ...t, status: "success", message: "ASR配置验证通过" } : t))
+            prev.map((t) =>
+              t.module === module
+                ? {
+                    ...t,
+                    status: "success",
+                    message: "ASR配置验证通过",
+                  }
+                : t
+            )
           )
           break
 
@@ -179,7 +190,15 @@ export const EnhancedPlayground: React.FC = () => {
             throw new Error("TTS配置不完整")
           }
           setTestResults((prev) =>
-            prev.map((t) => (t.module === module ? { ...t, status: "success", message: "TTS配置验证通过" } : t))
+            prev.map((t) =>
+              t.module === module
+                ? {
+                    ...t,
+                    status: "success",
+                    message: "TTS配置验证通过",
+                  }
+                : t
+            )
           )
           break
 
@@ -188,7 +207,15 @@ export const EnhancedPlayground: React.FC = () => {
             throw new Error("LLM配置不完整")
           }
           setTestResults((prev) =>
-            prev.map((t) => (t.module === module ? { ...t, status: "success", message: "LLM配置验证通过" } : t))
+            prev.map((t) =>
+              t.module === module
+                ? {
+                    ...t,
+                    status: "success",
+                    message: "LLM配置验证通过",
+                  }
+                : t
+            )
           )
           break
       }
@@ -200,7 +227,12 @@ export const EnhancedPlayground: React.FC = () => {
       setTestResults((prev) =>
         prev.map((t) =>
           t.module === module
-            ? { ...t, status: "error", message: error instanceof Error ? error.message : "测试失败", duration }
+            ? {
+                ...t,
+                status: "error",
+                message: error instanceof Error ? error.message : "测试失败",
+                duration,
+              }
             : t
         )
       )
@@ -244,22 +276,25 @@ export const EnhancedPlayground: React.FC = () => {
       console.log("Starting camera animation", { isCameraEnabled, cameraStream, cameraError })
       // 延迟一帧确保DOM已渲染
       setTimeout(() => {
-        controls.start({ 
-          opacity: 1, 
-          scale: 1, 
-          y: 0,
-          x: 0,
-          transition: { 
-            type: "spring", 
-            stiffness: 300, 
-            damping: 30,
-            duration: 0.2 
-          }
-        }).then(() => {
-          console.log("Camera show animation completed")
-        }).catch((err) => {
-          console.error("Camera show animation failed:", err)
-        })
+        controls
+          .start({
+            opacity: 1,
+            scale: 1,
+            y: 0,
+            x: 0,
+            transition: {
+              type: "spring",
+              stiffness: 300,
+              damping: 30,
+              duration: 0.2,
+            },
+          })
+          .then(() => {
+            console.log("Camera show animation completed")
+          })
+          .catch((err) => {
+            console.error("Camera show animation failed:", err)
+          })
       }, 10)
     }
   }, [isCameraEnabled, cameraStream, cameraError, controls])
@@ -278,7 +313,7 @@ export const EnhancedPlayground: React.FC = () => {
     if (videoRef && cameraStream) {
       videoRef.srcObject = cameraStream
       videoRef.play().catch((error) => {
-        console.log('Video play failed:', error)
+        console.log("Video play failed:", error)
       })
     }
   }, [videoRef, cameraStream])
@@ -335,7 +370,7 @@ export const EnhancedPlayground: React.FC = () => {
   const handleCameraToggle = async () => {
     console.log("Camera toggle clicked", { isCameraEnabled, cameraStream, cameraError })
     addDebugLog(`摄像头切换: 当前状态 ${isCameraEnabled ? "开启" : "关闭"}`)
-    
+
     if (isCameraEnabled) {
       // 关闭摄像头
       if (cameraStream) {
@@ -354,15 +389,15 @@ export const EnhancedPlayground: React.FC = () => {
           video: {
             deviceId: selectedCameraId ? { exact: selectedCameraId } : undefined,
             width: 640,
-            height: 480
-          }
+            height: 480,
+          },
         }
-        
+
         const stream = await navigator.mediaDevices.getUserMedia(constraints)
         console.log("Camera stream obtained:", stream)
         setCameraStream(stream)
         setIsCameraEnabled(true)
-        
+
         // 如果没有选择特定设备，记录实际使用的设备
         if (!selectedCameraId) {
           const videoTrack = stream.getVideoTracks()[0]
@@ -370,7 +405,7 @@ export const EnhancedPlayground: React.FC = () => {
             setSelectedCameraId(videoTrack.getSettings().deviceId || "")
           }
         }
-        
+
         addDebugLog("摄像头开启成功")
         // toast.success("摄像头已开启")
       } catch (error) {
@@ -422,7 +457,7 @@ export const EnhancedPlayground: React.FC = () => {
 
   // 人员检测配置更新
   const handlePersonDetectionConfigChange = (newConfig: Partial<typeof personDetectionConfig>) => {
-    setPersonDetectionConfig(prev => ({ ...prev, ...newConfig }))
+    setPersonDetectionConfig((prev) => ({ ...prev, ...newConfig }))
   }
 
   // 重置人员检测统计
@@ -432,38 +467,37 @@ export const EnhancedPlayground: React.FC = () => {
       averageStayDuration: 0,
       maxSimultaneousPersons: 0,
       lookingAtCameraCount: 0,
-      interactingCount: 0
+      interactingCount: 0,
     })
   }
 
   // 切换摄像头设备
   const handleCameraDeviceChange = async (deviceId: string) => {
     if (!isCameraEnabled) return
-    
+
     addDebugLog(`切换摄像头设备: ${deviceId}`)
     setSelectedCameraId(deviceId)
-    
+
     try {
       // 停止当前摄像头流
       if (cameraStream) {
         cameraStream.getTracks().forEach((track) => track.stop())
       }
-      
+
       // 启动新的摄像头流
       const constraints: MediaStreamConstraints = {
         video: {
           deviceId: deviceId ? { exact: deviceId } : undefined,
           width: 640,
-          height: 480
-        }
+          height: 480,
+        },
       }
-      
+
       const stream = await navigator.mediaDevices.getUserMedia(constraints)
       setCameraStream(stream)
       setCameraError(null)
       addDebugLog(`摄像头切换成功: ${deviceId}`)
       toast.success("摄像头已切换")
-      
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "未知错误"
       setCameraError(`摄像头切换失败: ${errorMessage}`)
@@ -532,7 +566,6 @@ export const EnhancedPlayground: React.FC = () => {
                     onASRModeChange={(mode) => setQuickConfig({ ...quickConfig, asrMode: mode })}
                     onApplyConfig={applyQuickConfig}
                   />
-
                 </TabsContent>
 
                 <TabsContent value="config" className="mt-0">
@@ -540,12 +573,9 @@ export const EnhancedPlayground: React.FC = () => {
                 </TabsContent>
 
                 <TabsContent value="debug" className="mt-0 space-y-4">
-                  <DebugPanel 
-                    testResults={testResults}
-                    onRunModuleTest={runModuleTest}
-                  />
+                  <ModuleTester />
 
-                  <div className="p-4 rounded bg-white border">
+                  <div className="rounded border bg-white p-4">
                     <ErrorDiagnostics />
                   </div>
                 </TabsContent>
@@ -562,8 +592,7 @@ export const EnhancedPlayground: React.FC = () => {
               <div className="h-full space-y-4">
                 <DebugMonitor />
 
-                <ModuleTester />
-
+                <PersonDetectionCard detectionResult={} systemState={} eventLogs={}/>
               </div>
             </div>
           </div>
@@ -578,7 +607,7 @@ export const EnhancedPlayground: React.FC = () => {
           onCameraToggle={handleCameraToggle}
           onVideoRef={setVideoRef}
         />
-        
+
         {/* 人员检测覆盖层 */}
         {isCameraEnabled && cameraStream && videoRef && (
           <PersonDetection
@@ -593,7 +622,7 @@ export const EnhancedPlayground: React.FC = () => {
       </div>
 
       {/* 快速设备控制栏 - 底部固定 */}
-      <motion.div 
+      <motion.div
         className="fixed right-0 bottom-0 left-0 z-40"
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -608,17 +637,14 @@ export const EnhancedPlayground: React.FC = () => {
           onPersonDetectionToggle={handlePersonDetectionToggle}
           onDeviceChange={(device) => {
             addDebugLog(`设备切换: ${device.type} -> ${device.deviceId}`)
-            if (device.type === 'camera') {
+            if (device.type === "camera") {
               handleCameraDeviceChange(device.deviceId)
             }
           }}
         />
       </motion.div>
 
-      <ConfigModal
-        isOpen={showFullConfig}
-        onClose={() => setShowFullConfig(false)}
-      />
+      <ConfigModal isOpen={showFullConfig} onClose={() => setShowFullConfig(false)} />
     </div>
   )
 }
