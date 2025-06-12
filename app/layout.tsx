@@ -150,7 +150,7 @@ export default function RootLayout({
             <main className="flex-1 relative overflow-hidden">
               {children}
             </main>
-            <FloatingAudioControl />
+            {/* <FloatingAudioControl /> */}
             <Toaster />
           </div>
         </Providers>
