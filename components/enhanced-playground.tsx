@@ -4,9 +4,9 @@ import { ChatHistory } from "@/components/chat/chat-history"
 import { DebugMonitor } from "@/components/debug-monitor"
 import { ErrorDiagnostics } from "@/components/error-diagnostics"
 import { ModuleTester } from "@/components/module-tester"
+import { PersonDetection } from "@/components/person-detection"
 import { AIControlPanel } from "@/components/playground/ai-control-panel"
 import { CameraPreview } from "@/components/playground/camera-preview"
-import { PersonDetection } from "@/components/person-detection"
 import { ConfigModal } from "@/components/playground/config-modal"
 import { DebugPanel } from "@/components/playground/debug-panel"
 import { MainControls } from "@/components/playground/main-controls"
@@ -14,7 +14,6 @@ import { QuickConfigPanel } from "@/components/playground/quick-config-panel"
 import { StatusBar } from "@/components/playground/status-bar"
 import { AIConfig, QuickConfig, TestResult } from "@/components/playground/types"
 import { VoiceConfigPanel } from "@/components/playground/voice-config-panel"
-import { PersonDetectionConfigPanel } from "@/components/playground/person-detection-config-panel"
 import { QuickDeviceControls } from "@/components/quick-device-controls"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { appConfigAtom } from "@/store/app-config"
@@ -23,7 +22,7 @@ import { rtcActionsAtom } from "@/store/rtc-actions"
 import { rtcConfigAtom } from "@/store/rtc-config"
 import { rtcStateAtom } from "@/store/rtc-state"
 import { voiceChatStateAtom } from "@/store/voice-chat-state"
-import { AnimatePresence, motion, useMotionValue, useAnimation } from "framer-motion"
+import { motion, useAnimation } from "framer-motion"
 import { useAtom } from "jotai"
 import {
   Bot,
@@ -534,16 +533,6 @@ export const EnhancedPlayground: React.FC = () => {
                     onApplyConfig={applyQuickConfig}
                   />
 
-                  <PersonDetectionConfigPanel
-                    enabled={isPersonDetectionEnabled}
-                    isRunning={isPersonDetectionEnabled}
-                    config={personDetectionConfig}
-                    stats={personDetectionStats}
-                    onToggle={handlePersonDetectionToggle}
-                    onConfigChange={handlePersonDetectionConfigChange}
-                    onResetStats={handleResetPersonDetectionStats}
-                    cameraEnabled={isCameraEnabled}
-                  />
                 </TabsContent>
 
                 <TabsContent value="config" className="mt-0">
