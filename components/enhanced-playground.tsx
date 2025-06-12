@@ -27,6 +27,7 @@ import {
   AlertCircle,
   Bot,
   BotOff,
+  Camera,
   CheckCircle,
   MessageSquare,
   Mic,
@@ -37,6 +38,7 @@ import {
   Play,
   RefreshCw,
   Settings,
+  TestTube,
   Users,
   Wifi,
   WifiOff,
@@ -89,6 +91,7 @@ export const EnhancedPlayground: React.FC = () => {
   const [isSpeakerEnabled, setIsSpeakerEnabled] = useState(true)
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null)
   const [cameraError, setCameraError] = useState<string | null>(null)
+  const [videoRef, setVideoRef] = useState<HTMLVideoElement | null>(null)
 
   // AI配置
   const [aiConfig, setAiConfig] = useState({
@@ -208,6 +211,16 @@ export const EnhancedPlayground: React.FC = () => {
       addDebugLog(`AI错误: ${voiceChatState.error}`)
     }
   }, [voiceChatState.isAgentActive, voiceChatState.error])
+
+  // 处理摄像头流
+  useEffect(() => {
+    if (videoRef && cameraStream) {
+      videoRef.srcObject = cameraStream
+      videoRef.play().catch((error) => {
+        console.log('Video play failed:', error)
+      })
+    }
+  }, [videoRef, cameraStream])
 
   // 清理摄像头资源
   useEffect(() => {
@@ -761,60 +774,66 @@ export const EnhancedPlayground: React.FC = () => {
 
                 <ModuleTester />
 
-                {/* 摄像头预览 */}
-                {(isCameraEnabled && cameraStream) || cameraError ? (
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="flex items-center gap-2 text-base">
-                        {cameraError ? (
-                          <AlertCircle className="h-4 w-4 text-red-600" />
-                        ) : (
-                          <Camera className="h-4 w-4 text-green-600" />
-                        )}
-                        摄像头
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {cameraError ? (
-                        <Alert variant="destructive">
-                          <AlertCircle className="h-4 w-4" />
-                          <AlertDescription className="text-sm">
-                            {cameraError}
-                            <div className="mt-2">
-                              <Button size="sm" variant="outline" onClick={handleCameraToggle} className="text-xs">
-                                重试
-                              </Button>
-                            </div>
-                          </AlertDescription>
-                        </Alert>
-                      ) : (
-                        <div className="relative">
-                          <video
-                            ref={(video) => {
-                              if (video && cameraStream) {
-                                video.srcObject = cameraStream
-                                video.play()
-                              }
-                            }}
-                            className="w-full rounded-lg bg-black"
-                            style={{ aspectRatio: "4/3" }}
-                            muted
-                            playsInline
-                          />
-                          <div className="absolute top-2 right-2 flex items-center gap-1 rounded-full bg-green-500 px-2 py-1 text-xs text-white">
-                            <div className="h-2 w-2 animate-pulse rounded-full bg-white" />
-                            <span>录制中</span>
-                          </div>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ) : null}
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* 摄像头悬浮预览 */}
+      {(isCameraEnabled && cameraStream) || cameraError ? (
+        <div className="fixed bottom-20 right-4 z-50 w-64 rounded-lg bg-white shadow-2xl border">
+          <div className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-t-lg border-b">
+            <div className="flex items-center gap-2">
+              {cameraError ? (
+                <AlertCircle className="h-4 w-4 text-red-600" />
+              ) : (
+                <Camera className="h-4 w-4 text-green-600" />
+              )}
+              <span className="text-sm font-medium">摄像头</span>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleCameraToggle}
+              className="h-6 w-6 p-0 hover:bg-gray-200"
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          </div>
+          <div className="p-2">
+            {cameraError ? (
+              <div className="text-center py-4">
+                <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
+                <p className="text-sm text-red-600 mb-3">{cameraError}</p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleCameraToggle}
+                  className="text-xs"
+                >
+                  重试
+                </Button>
+              </div>
+            ) : (
+              <div className="relative">
+                <video
+                  ref={setVideoRef}
+                  className="w-full rounded bg-black"
+                  style={{ aspectRatio: "4/3" }}
+                  muted
+                  playsInline
+                  autoPlay
+                />
+                <div className="absolute top-1 right-1 flex items-center gap-1 rounded-full bg-green-500 px-2 py-1 text-xs text-white">
+                  <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
+                  <span>录制中</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : null}
 
       {/* 快速设备控制栏 - 底部固定 */}
       <div className="fixed right-0 bottom-0 left-0 z-40">

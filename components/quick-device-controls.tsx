@@ -67,11 +67,22 @@ export const QuickDeviceControls: React.FC<QuickDeviceControlsProps> = ({
   useEffect(() => {
     const getDevices = async () => {
       try {
+        // 先请求权限以获取设备标签
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ 
+            audio: true, 
+            video: true 
+          })
+          // 获取权限后立即关闭流
+          stream.getTracks().forEach(track => track.stop())
+        } catch (permissionError) {
+          console.log('Permission not granted, will get limited device info')
+        }
+        
         const devices = await navigator.mediaDevices.enumerateDevices()
         const speakers = devices.filter(d => d.kind === 'audiooutput')
         const cameras = devices.filter(d => d.kind === 'videoinput')
 
-        console.log({devices, speakers, cameras})
         
         setSpeakerDevices(speakers)
         setCameraDevices(cameras)
@@ -81,7 +92,6 @@ export const QuickDeviceControls: React.FC<QuickDeviceControlsProps> = ({
           speakers: speakers.length,
           cameras: cameras.length
         })
-        
         
         // 设置默认选择
         if (speakers.length > 0 && !selectedSpeaker) {
@@ -107,7 +117,12 @@ export const QuickDeviceControls: React.FC<QuickDeviceControlsProps> = ({
     <div className={`flex items-center justify-center gap-2 p-3 bg-white/95 backdrop-blur-sm border-t shadow-lg ${className}`}>
       {/* 麦克风控制 */}
       <div className="flex items-center">
-        {deviceCounts.microphones > 1 ? (
+        {console.log('Mic button state:', { 
+          actualMicEnabled, 
+          curMicState, 
+          deviceCount: deviceCounts.microphones,
+          micsLength: mics.length 
+        }) || deviceCounts.microphones > 1 ? (
           <DropdownMenu>
             <div className="flex">
               {/* 主麦克风按钮 */}
@@ -115,6 +130,7 @@ export const QuickDeviceControls: React.FC<QuickDeviceControlsProps> = ({
                 variant={actualMicEnabled ? "default" : "destructive"}
                 size="sm"
                 onClick={() => {
+                  console.log('Mic button clicked', { onMicToggle, toggleMic })
                   if (onMicToggle) {
                     onMicToggle()
                   } else {
@@ -176,6 +192,7 @@ export const QuickDeviceControls: React.FC<QuickDeviceControlsProps> = ({
             variant={actualMicEnabled ? "default" : "destructive"}
             size="sm"
             onClick={() => {
+              console.log('Single mic button clicked', { onMicToggle, toggleMic })
               if (onMicToggle) {
                 onMicToggle()
               } else {
