@@ -82,11 +82,6 @@ export class PersonDetector {
 
     // 创建canvas用于绘制
     this.createCanvas()
-    
-    // 延迟初始化MediaPipe，避免阻塞构造函数
-    setTimeout(() => {
-      this.initializeMediaPipe()
-    }, 100)
   }
 
   private createCanvas(): void {
@@ -108,46 +103,54 @@ export class PersonDetector {
         "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
       )
 
-      // 创建姿态检测器
-      this.poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
-        baseOptions: {
-          modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
-          delegate: "GPU"
-        },
-        runningMode: "VIDEO",
-        numPoses: this.config.maxPersons,
-        minPoseDetectionConfidence: this.config.minConfidence,
-        minPosePresenceConfidence: this.config.minConfidence,
-        minTrackingConfidence: this.config.minConfidence
-      })
+      // 并行创建三个检测器
+      const [poseLandmarker, faceLandmarker, handLandmarker] = await Promise.all([
+        // 创建姿态检测器
+        PoseLandmarker.createFromOptions(vision, {
+          baseOptions: {
+            modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
+            delegate: "GPU"
+          },
+          runningMode: "VIDEO",
+          numPoses: this.config.maxPersons,
+          minPoseDetectionConfidence: this.config.minConfidence,
+          minPosePresenceConfidence: this.config.minConfidence,
+          minTrackingConfidence: this.config.minConfidence
+        }),
 
-      // 创建面部检测器
-      this.faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
-        baseOptions: {
-          modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
-          delegate: "GPU"
-        },
-        runningMode: "VIDEO",
-        numFaces: this.config.maxPersons,
-        minFaceDetectionConfidence: this.config.minConfidence,
-        minFacePresenceConfidence: this.config.minConfidence,
-        minTrackingConfidence: this.config.minConfidence,
-        outputFaceBlendshapes: false,
-        outputFacialTransformationMatrixes: false
-      })
+        // 创建面部检测器
+        FaceLandmarker.createFromOptions(vision, {
+          baseOptions: {
+            modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
+            delegate: "GPU"
+          },
+          runningMode: "VIDEO",
+          numFaces: this.config.maxPersons,
+          minFaceDetectionConfidence: this.config.minConfidence,
+          minFacePresenceConfidence: this.config.minConfidence,
+          minTrackingConfidence: this.config.minConfidence,
+          outputFaceBlendshapes: false,
+          outputFacialTransformationMatrixes: false
+        }),
 
-      // 创建手部检测器
-      this.handLandmarker = await HandLandmarker.createFromOptions(vision, {
-        baseOptions: {
-          modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
-          delegate: "GPU"
-        },
-        runningMode: "VIDEO",
-        numHands: this.config.maxPersons * 2, // 每人最多2只手
-        minHandDetectionConfidence: this.config.minConfidence,
-        minHandPresenceConfidence: this.config.minConfidence,
-        minTrackingConfidence: this.config.minConfidence
-      })
+        // 创建手部检测器
+        HandLandmarker.createFromOptions(vision, {
+          baseOptions: {
+            modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
+            delegate: "GPU"
+          },
+          runningMode: "VIDEO",
+          numHands: this.config.maxPersons * 2, // 每人最多2只手
+          minHandDetectionConfidence: this.config.minConfidence,
+          minHandPresenceConfidence: this.config.minConfidence,
+          minTrackingConfidence: this.config.minConfidence
+        })
+      ])
+
+      // 分配到实例变量
+      this.poseLandmarker = poseLandmarker
+      this.faceLandmarker = faceLandmarker
+      this.handLandmarker = handLandmarker
 
       console.log('MediaPipe Tasks initialized successfully')
     } catch (error) {
@@ -707,15 +710,11 @@ export class PersonDetector {
 
   // 公共方法
   public async start(): Promise<void> {
+
+    await this.initializeMediaPipe()
+    
     if (!this.video) {
       throw new Error('Video element not initialized')
-    }
-
-    // 等待MediaPipe初始化
-    let attempts = 0
-    while ((!this.poseLandmarker || !this.faceLandmarker || !this.handLandmarker) && attempts < 50) {
-      await new Promise(resolve => setTimeout(resolve, 100))
-      attempts++
     }
 
     if (!this.poseLandmarker || !this.faceLandmarker || !this.handLandmarker) {

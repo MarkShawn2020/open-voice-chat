@@ -124,21 +124,23 @@ export const PersonDetection: React.FC<PersonDetectionProps> = ({
   useEffect(() => {
     const startDetector = async () => {
       if (detectorRef.current) {
-        if (enabled && isRunning) {
+        if (enabled) {
           try {
             await detectorRef.current.start()
+            setIsRunning(true)
           } catch (error) {
             console.error("Failed to start detector:", error)
             toast.error("启动人员检测失败")
           }
         } else {
           detectorRef.current.stop()
+          setIsRunning(false)
         }
       }
     }
     
     startDetector()
-  }, [enabled, isRunning])
+  }, [enabled])
 
   // 更新配置
   useEffect(() => {
