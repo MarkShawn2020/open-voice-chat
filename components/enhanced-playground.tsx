@@ -46,6 +46,7 @@ import {
 } from "lucide-react"
 import React, { useEffect, useState } from "react"
 import { toast } from "sonner"
+import { motion, AnimatePresence } from "framer-motion"
 
 interface TestResult {
   module: string
@@ -70,6 +71,32 @@ export const EnhancedPlayground: React.FC = () => {
   // 确保在客户端渲染
   useEffect(() => {
     setIsClient(true)
+    
+    // 设置拖拽约束
+    const updateConstraints = () => {
+      if (typeof window !== 'undefined') {
+        const windowWidth = window.innerWidth
+        const windowHeight = window.innerHeight
+        const elementWidth = 256 // w-64 = 256px
+        const elementHeight = 300 // 大约高度
+        
+        setDragConstraints({
+          top: -windowHeight + elementHeight - 80, // 保留80px底部空间给控制栏
+          left: -windowWidth + elementWidth,
+          right: windowWidth - elementWidth,
+          bottom: windowHeight - elementHeight - 80,
+        })
+      }
+    }
+    
+    updateConstraints()
+    window.addEventListener('resize', updateConstraints)
+    
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('resize', updateConstraints)
+      }
+    }
   }, [])
 
   // 调试状态
@@ -92,6 +119,12 @@ export const EnhancedPlayground: React.FC = () => {
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null)
   const [cameraError, setCameraError] = useState<string | null>(null)
   const [videoRef, setVideoRef] = useState<HTMLVideoElement | null>(null)
+  const [dragConstraints, setDragConstraints] = useState({
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  })
 
   // AI配置
   const [aiConfig, setAiConfig] = useState({
@@ -781,62 +814,137 @@ export const EnhancedPlayground: React.FC = () => {
       </div>
 
       {/* 摄像头悬浮预览 */}
-      {(isCameraEnabled && cameraStream) || cameraError ? (
-        <div className="fixed bottom-20 right-4 z-50 w-64 rounded-lg bg-white shadow-2xl border">
-          <div className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-t-lg border-b">
-            <div className="flex items-center gap-2">
-              {cameraError ? (
-                <AlertCircle className="h-4 w-4 text-red-600" />
-              ) : (
-                <Camera className="h-4 w-4 text-green-600" />
-              )}
-              <span className="text-sm font-medium">摄像头</span>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleCameraToggle}
-              className="h-6 w-6 p-0 hover:bg-gray-200"
-            >
-              <X className="h-3 w-3" />
-            </Button>
-          </div>
-          <div className="p-2">
-            {cameraError ? (
-              <div className="text-center py-4">
-                <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
-                <p className="text-sm text-red-600 mb-3">{cameraError}</p>
+      <AnimatePresence>
+        {((isCameraEnabled && cameraStream) || cameraError) && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8, y: 20 }}
+            transition={{ 
+              type: "spring", 
+              stiffness: 300, 
+              damping: 30,
+              duration: 0.2 
+            }}
+            className="fixed bottom-20 right-4 z-50 w-64 rounded-lg bg-white shadow-2xl border"
+            drag
+            dragConstraints={dragConstraints}
+            dragMomentum={false}
+            dragElastic={0.1}
+            whileDrag={{ scale: 1.02, rotate: 2 }}
+          >
+            <div className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-t-lg border-b cursor-move">
+              <motion.div 
+                className="flex items-center gap-2"
+                initial={{ x: -10, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: 0.1 }}
+              >
+                {cameraError ? (
+                  <motion.div
+                    animate={{ rotate: [0, -10, 10, 0] }}
+                    transition={{ duration: 0.5, repeat: Infinity, repeatDelay: 2 }}
+                  >
+                    <AlertCircle className="h-4 w-4 text-red-600" />
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    animate={{ scale: [1, 1.1, 1] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  >
+                    <Camera className="h-4 w-4 text-green-600" />
+                  </motion.div>
+                )}
+                <span className="text-sm font-medium">摄像头</span>
+              </motion.div>
+              <motion.div
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+              >
                 <Button
+                  variant="ghost"
                   size="sm"
-                  variant="outline"
                   onClick={handleCameraToggle}
-                  className="text-xs"
+                  className="h-6 w-6 p-0 hover:bg-gray-200"
                 >
-                  重试
+                  <X className="h-3 w-3" />
                 </Button>
-              </div>
-            ) : (
-              <div className="relative">
-                <video
-                  ref={setVideoRef}
-                  className="w-full rounded bg-black"
-                  style={{ aspectRatio: "4/3" }}
-                  muted
-                  playsInline
-                  autoPlay
-                />
-                <div className="absolute top-1 right-1 flex items-center gap-1 rounded-full bg-green-500 px-2 py-1 text-xs text-white">
-                  <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
-                  <span>录制中</span>
+              </motion.div>
+            </div>
+            <motion.div 
+              className="p-2"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+            >
+              {cameraError ? (
+                <motion.div 
+                  className="text-center py-4"
+                  initial={{ y: 10, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  <motion.div
+                    animate={{ y: [0, -5, 0] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                  >
+                    <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
+                  </motion.div>
+                  <p className="text-sm text-red-600 mb-3">{cameraError}</p>
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleCameraToggle}
+                      className="text-xs"
+                    >
+                      重试
+                    </Button>
+                  </motion.div>
+                </motion.div>
+              ) : (
+                <div className="relative">
+                  <motion.video
+                    ref={setVideoRef}
+                    className="w-full rounded bg-black"
+                    style={{ aspectRatio: "4/3" }}
+                    muted
+                    playsInline
+                    autoPlay
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: 0.3, duration: 0.3 }}
+                  />
+                  <motion.div 
+                    className="absolute top-1 right-1 flex items-center gap-1 rounded-full bg-green-500 px-2 py-1 text-xs text-white"
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: 0.5, type: "spring" }}
+                  >
+                    <motion.div 
+                      className="h-1.5 w-1.5 rounded-full bg-white"
+                      animate={{ opacity: [1, 0.3, 1] }}
+                      transition={{ duration: 1.5, repeat: Infinity }}
+                    />
+                    <span>录制中</span>
+                  </motion.div>
                 </div>
-              </div>
-            )}
-          </div>
-        </div>
-      ) : null}
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* 快速设备控制栏 - 底部固定 */}
-      <div className="fixed right-0 bottom-0 left-0 z-40">
+      <motion.div 
+        className="fixed right-0 bottom-0 left-0 z-40"
+        initial={{ y: 100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ type: "spring", stiffness: 300, damping: 30, delay: 0.5 }}
+      >
         <QuickDeviceControls
           isSpeakerEnabled={isSpeakerEnabled}
           isCameraEnabled={isCameraEnabled}
@@ -846,29 +954,70 @@ export const EnhancedPlayground: React.FC = () => {
             addDebugLog(`设备切换: ${device.type} -> ${device.deviceId}`)
           }}
         />
-      </div>
+      </motion.div>
 
       {/* 完整配置模态框 */}
-      {showFullConfig && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm">
-          <div className="flex h-full items-center justify-center p-4">
-            <div className="max-h-[90vh] w-full max-w-6xl overflow-hidden rounded-lg bg-white shadow-xl">
-              <div className="flex items-center justify-between border-b px-6 py-4">
-                <div>
-                  <h2 className="text-xl font-semibold">完整配置</h2>
-                  <p className="text-sm text-gray-600">火山引擎服务的详细配置参数</p>
-                </div>
-                <Button variant="ghost" size="sm" onClick={() => setShowFullConfig(false)} className="rounded-full">
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="max-h-[calc(90vh-80px)] overflow-y-auto p-6">
-                <Config />
-              </div>
+      <AnimatePresence>
+        {showFullConfig && (
+          <motion.div 
+            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setShowFullConfig(false)
+              }
+            }}
+          >
+            <div className="flex h-full items-center justify-center p-4">
+              <motion.div 
+                className="max-h-[90vh] w-full max-w-6xl overflow-hidden rounded-lg bg-white shadow-xl"
+                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <motion.div 
+                  className="flex items-center justify-between border-b px-6 py-4"
+                  initial={{ y: -20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.1 }}
+                >
+                  <div>
+                    <h2 className="text-xl font-semibold">完整配置</h2>
+                    <p className="text-sm text-gray-600">火山引擎服务的详细配置参数</p>
+                  </div>
+                  <motion.div
+                    whileHover={{ scale: 1.1, rotate: 90 }}
+                    whileTap={{ scale: 0.9 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setShowFullConfig(false)} 
+                      className="rounded-full"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </motion.div>
+                </motion.div>
+                <motion.div 
+                  className="max-h-[calc(90vh-80px)] overflow-y-auto p-6"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                >
+                  <Config />
+                </motion.div>
+              </motion.div>
             </div>
-          </div>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

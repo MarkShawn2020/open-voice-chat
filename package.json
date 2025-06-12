@@ -80,6 +80,7 @@
     "@volcengine/rtc": "^4.66.15",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "framer-motion": "^12.17.0",
     "jotai": "^2.12.5",
     "jotai-immer": "^0.4.1",
     "lodash": "^4.17.21",
