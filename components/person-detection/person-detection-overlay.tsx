@@ -2,10 +2,30 @@
 
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { cn } from "@/lib/utils"
 import type { DetectedPerson, PersonDetectionResult } from "@/types/person-detection"
 import { motion, AnimatePresence } from "framer-motion"
 import { Eye, EyeOff, TrendingUp, TrendingDown, Hand, Users } from "lucide-react"
 import React from "react"
+
+// 根据优先级排序人员并限制显示数量
+const getPriorityPersons = (persons: DetectedPerson[]): DetectedPerson[] => {
+  return persons
+    .sort((a, b) => {
+      // 优先级排序：交互中 > 注视摄像头 > 正在接近 > 置信度高
+      if (a.state.isInteracting !== b.state.isInteracting) {
+        return a.state.isInteracting ? -1 : 1
+      }
+      if (a.state.isLookingAtCamera !== b.state.isLookingAtCamera) {
+        return a.state.isLookingAtCamera ? -1 : 1
+      }
+      if (a.state.isApproaching !== b.state.isApproaching) {
+        return a.state.isApproaching ? -1 : 1
+      }
+      return b.confidence - a.confidence
+    })
+    .slice(0, 6) // 最多显示6个人
+}
 
 interface PersonDetectionOverlayProps {
   detectionResult: PersonDetectionResult | null
@@ -88,15 +108,20 @@ export const PersonDetectionOverlay: React.FC<PersonDetectionOverlayProps> = ({
       {/* 人员详细信息列表 */}
       {showPersonDetails && (
         <motion.div
-          className="absolute bottom-2 right-2 z-10 max-w-80 z-[9999]"
+          className="absolute bottom-2 right-2 z-10 z-[9999]"
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.3 }}
         >
-          <div className="space-y-2 max-h-64 overflow-y-auto">
-            {detectionResult.persons.map((person, index) => (
-              <PersonDetailCard key={person.id} person={person} index={index + 1} />
-            ))}
+          <div className="h-80 overflow-hidden">
+            <motion.div
+              className="flex flex-col gap-2 h-full overflow-y-auto"
+              layout
+            >
+              {getPriorityPersons(detectionResult.persons).map((person, index) => (
+                <PersonDetailCard key={person.id} person={person} index={index + 1} />
+              ))}
+            </motion.div>
           </div>
         </motion.div>
       )}
@@ -227,117 +252,87 @@ interface PersonDetailCardProps {
 }
 
 const PersonDetailCard: React.FC<PersonDetailCardProps> = ({ person, index }) => {
+  // 获取主要手势
+  const getPrimaryGesture = () => {
+    if (!person.gestureState) return null
+    if (person.gestureState.isPinching) return { icon: "🤏", text: "捏合", color: "text-purple-400" }
+    if (person.gestureState.isPointing) return { icon: "👉", text: "指向", color: "text-blue-400" }
+    if (person.gestureState.isWaving) return { icon: "👋", text: "挥手", color: "text-green-400" }
+    if (person.gestureState.isThumpsUp) return { icon: "👍", text: "点赞", color: "text-yellow-400" }
+    return null
+  }
+
+  const primaryGesture = getPrimaryGesture()
+
   return (
     <motion.div
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 20 }}
-      transition={{ delay: index * 0.1 }}
+      className="h-32"
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.9 }}
+      transition={{ delay: index * 0.05 }}
+      layout
     >
-      <Card className="bg-black/70 backdrop-blur-sm border-white/20 text-white text-xs z-[9999]">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm flex items-center justify-between">
-            <span>人员 #{person.id.slice(-4)}</span>
+      <Card className="bg-black/70 backdrop-blur-sm border-white/20 text-white text-xs h-full w-[320px]">
+        <CardHeader className="pb-1 px-3 pt-2 ">
+          <CardTitle className="text-xs flex items-center justify-between">
+            <span>#{person.id.slice(-4)}</span>
             <Badge
               variant="secondary"
-              className={`text-xs ${
-                person.confidence > 0.8
+              className={`text-xs px-1 py-0 ${person.confidence > 0.8
                   ? "bg-green-500/20 text-green-200"
                   : person.confidence > 0.6
-                  ? "bg-yellow-500/20 text-yellow-200"
-                  : "bg-red-500/20 text-red-200"
-              }`}
+                    ? "bg-yellow-500/20 text-yellow-200"
+                    : "bg-red-500/20 text-red-200"
+                }`}
             >
               {(person.confidence * 100).toFixed(0)}%
             </Badge>
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-1">
+        <CardContent className="px-3 pb-2 space-y-1">
+          {/* 状态指示器 */}
           <div className="flex items-center gap-2">
-            {person.state.isLookingAtCamera ? (
+            {person.state.isLookingAtCamera && (
               <Eye className="h-3 w-3 text-green-400" />
-            ) : (
-              <EyeOff className="h-3 w-3 text-gray-400" />
             )}
-            <span className="text-xs">
-              {person.state.isLookingAtCamera ? "注意摄像头" : "未注意"}
-            </span>
-          </div>
-          
-          {person.state.isApproaching && (
-            <div className="flex items-center gap-2">
-              <TrendingUp className="h-3 w-3 text-blue-400" />
-              <span className="text-xs">正在接近</span>
-            </div>
-          )}
-          
-          {person.state.isLeaving && (
-            <div className="flex items-center gap-2">
-              <TrendingDown className="h-3 w-3 text-red-400" />
-              <span className="text-xs">正在离开</span>
-            </div>
-          )}
-          
-          {person.state.isInteracting && (
-            <div className="flex items-center gap-2">
+            {person.state.isInteracting && (
               <Hand className="h-3 w-3 text-orange-400" />
-              <span className="text-xs">正在交互</span>
-            </div>
-          )}
-          
-          <div className="flex items-center justify-between">
-            <span>注意力:</span>
-            <div className="w-12 h-1 bg-gray-600 rounded">
+            )}
+            {person.state.isApproaching && (
+              <TrendingUp className="h-3 w-3 text-blue-400" />
+            )}
+            {person.state.isLeaving && (
+              <TrendingDown className="h-3 w-3 text-red-400" />
+            )}
+            {person.features.eyesDetected && (
+              <span className="text-xs">👁️</span>
+            )}
+          </div>
+
+          {/* 注意力条 */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-300">注意力</span>
+            <div className="flex-1 h-1 bg-gray-600 rounded">
               <div
-                className="h-full bg-blue-400 rounded"
+                className="h-full bg-blue-400 rounded transition-all duration-300"
                 style={{ width: `${person.state.attentionLevel * 100}%` }}
               />
             </div>
           </div>
-          
-          {person.features.eyesDetected && (
-            <div className="text-xs text-green-400">👁️ 检测到眼睛</div>
-          )}
 
           {/* 手势显示 */}
-          {person.gestureState && (
-            <div className="space-y-1 pt-1 border-t border-white/10">
-              <div className="text-xs text-gray-300">手势:</div>
-              {person.gestureState.isPinching && (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs">🤏</span>
-                  <span className="text-xs text-purple-400">捏合</span>
-                </div>
-              )}
-              {person.gestureState.isPointing && (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs">👉</span>
-                  <span className="text-xs text-blue-400">指向</span>
-                </div>
-              )}
-              {person.gestureState.isWaving && (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs">👋</span>
-                  <span className="text-xs text-green-400">挥手</span>
-                </div>
-              )}
-              {person.gestureState.isThumpsUp && (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs">👍</span>
-                  <span className="text-xs text-yellow-400">点赞</span>
-                </div>
-              )}
-              {person.gestureState.confidence > 0 && (
-                <div className="text-xs text-gray-400">
-                  置信度: {(person.gestureState.confidence * 100).toFixed(0)}%
-                </div>
+          <div className={cn("flex items-center gap-2 pt-1", !primaryGesture && "opacity-0")}>
+              <span className="text-xs">{primaryGesture?.icon}</span>
+              <span className={`text-xs ${primaryGesture?.color}`}>
+                {primaryGesture?.text}
+              </span>
+              {person.gestureState && person.gestureState.confidence > 0 && (
+                <span className="text-xs text-gray-400 ml-auto">
+                  {(person.gestureState.confidence * 100).toFixed(0)}%
+                </span>
               )}
             </div>
-          )}
-          
-          <div className="text-xs text-gray-400">
-            检测时间: {new Date(person.timestamp).toLocaleTimeString()}
-          </div>
         </CardContent>
       </Card>
     </motion.div>

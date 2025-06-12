@@ -119,7 +119,7 @@ interface StatsSectionProps {
 
 const StatsSection: React.FC<StatsSectionProps> = ({ stats }) => {
   return (
-    <div className="grid grid-cols-2 gap-4">
+    <div className="flex flex-col gap-2">
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <Label className="text-sm font-medium">总检测人次</Label>
