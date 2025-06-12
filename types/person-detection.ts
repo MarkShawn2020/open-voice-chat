@@ -1,5 +1,14 @@
 // 人员检测相关的类型定义
 
+// 手势检测类型
+export interface GestureState {
+  isPinching: boolean // 捏合手势
+  isPointing: boolean // 指向手势
+  isWaving: boolean // 挥手手势
+  isThumpsUp: boolean // 竖大拇指
+  confidence: number
+}
+
 export interface PersonPosition {
   x: number
   y: number
@@ -11,25 +20,22 @@ export interface PersonFeatures {
   // 头部朝向 (角度，0度为正面)
   headDirection: number
   // 身体朝向
-  bodyDirection: number
+  bodyOrientation: number
   // 眼睛检测
   eyesDetected: boolean
   // 面部可见度 (0-1)
   faceVisibility: number
-  // 距离估算 (像素大小)
-  estimatedDistance: number
+  // 是否检测到手部
+  hasHands: boolean
+  // 手势列表
+  handGestures: string[]
 }
 
 export interface PersonMotion {
-  // 移动方向向量
-  velocityX: number
-  velocityY: number
   // 移动速度
-  speed: number
-  // 是否在接近摄像头
-  isApproaching: boolean
-  // 是否在远离摄像头
-  isLeaving: boolean
+  velocity: number
+  // 移动方向
+  direction: number
   // 是否静止
   isStationary: boolean
 }
@@ -45,8 +51,8 @@ export interface PersonState {
   isInteracting: boolean
   // 注意力级别 (0-1)
   attentionLevel: number
-  // 交互置信度 (0-1)
-  interactionConfidence: number
+  // 参与度分数 (0-1)
+  engagementScore: number
 }
 
 export interface DetectedPerson {
@@ -62,10 +68,10 @@ export interface DetectedPerson {
   motion: PersonMotion
   // 状态信息
   state: PersonState
+  // 手势状态
+  gestureState?: GestureState
   // 检测置信度 (0-1)
   confidence: number
-  // 连续跟踪帧数
-  trackingFrames: number
 }
 
 export interface PersonDetectionResult {
@@ -75,13 +81,8 @@ export interface PersonDetectionResult {
   totalCount: number
   // 检测时间戳
   timestamp: number
-  // 帧率
-  fps: number
-  // 检测区域
-  detectionArea: {
-    width: number
-    height: number
-  }
+  // 处理时间
+  processingTime: number
 }
 
 export interface PersonDetectionConfig {

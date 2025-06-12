@@ -85,7 +85,7 @@ export class PersonStateAnalyzer {
       isLeaving: motionAnalysis.isLeaving,
       isInteracting: interactionAnalysis.isInteracting,
       attentionLevel: this.calculateAttentionLevel(person, isLookingAtCamera),
-      interactionConfidence: interactionAnalysis.confidence
+      engagementScore: interactionAnalysis.confidence
     }
     
     // 保存当前状态
@@ -162,6 +162,8 @@ export class PersonStateAnalyzer {
     for (let i = 1; i < positions.length; i++) {
       const prev = positions[i - 1]
       const curr = positions[i]
+      if (!prev || !curr) continue
+      
       const deltaTime = (curr.timestamp - prev.timestamp) / 1000 // 转换为秒
       
       if (deltaTime > 0) {
@@ -185,6 +187,7 @@ export class PersonStateAnalyzer {
     // 计算人员大小变化来判断远近
     const firstPosition = positions[0]
     const lastPosition = positions[positions.length - 1]
+    if (!firstPosition || !lastPosition) return { isApproaching: false, isLeaving: false }
     const sizeChange = this.calculateSizeFromPosition(lastPosition) - this.calculateSizeFromPosition(firstPosition)
     
     // 基于大小变化和运动速度判断接近/离开
@@ -242,6 +245,7 @@ export class PersonStateAnalyzer {
     for (let i = 1; i < positions.length; i++) {
       const prev = positions[i - 1]
       const curr = positions[i]
+      if (!prev || !curr) continue
       const velocity = Math.sqrt(
         Math.pow(curr.x - prev.x, 2) + Math.pow(curr.y - prev.y, 2)
       )
@@ -255,7 +259,8 @@ export class PersonStateAnalyzer {
       const curr = velocities[i]
       const next = velocities[i + 1]
       
-      if ((curr > prev && curr > next) || (curr < prev && curr < next)) {
+      if (prev !== undefined && curr !== undefined && next !== undefined && 
+          ((curr > prev && curr > next) || (curr < prev && curr < next))) {
         directionChanges++
       }
     }

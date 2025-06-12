@@ -100,6 +100,9 @@ export const EnhancedPlayground: React.FC = () => {
   
   // 人员检测状态
   const [isPersonDetectionEnabled, setIsPersonDetectionEnabled] = useState(false)
+  
+  // 当前选择的摄像头设备ID
+  const [selectedCameraId, setSelectedCameraId] = useState<string>("")
   const [personDetectionConfig, setPersonDetectionConfig] = useState({
     detectionInterval: 200,
     minConfidence: 0.6,
@@ -348,12 +351,27 @@ export const EnhancedPlayground: React.FC = () => {
       setCameraError(null)
       addDebugLog("尝试开启摄像头...")
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: 640, height: 480 },
-        })
+        const constraints: MediaStreamConstraints = {
+          video: {
+            deviceId: selectedCameraId ? { exact: selectedCameraId } : undefined,
+            width: 640,
+            height: 480
+          }
+        }
+        
+        const stream = await navigator.mediaDevices.getUserMedia(constraints)
         console.log("Camera stream obtained:", stream)
         setCameraStream(stream)
         setIsCameraEnabled(true)
+        
+        // 如果没有选择特定设备，记录实际使用的设备
+        if (!selectedCameraId) {
+          const videoTrack = stream.getVideoTracks()[0]
+          if (videoTrack && videoTrack.getSettings().deviceId) {
+            setSelectedCameraId(videoTrack.getSettings().deviceId || "")
+          }
+        }
+        
         addDebugLog("摄像头开启成功")
         toast.success("摄像头已开启")
       } catch (error) {
@@ -417,6 +435,43 @@ export const EnhancedPlayground: React.FC = () => {
       lookingAtCameraCount: 0,
       interactingCount: 0
     })
+  }
+
+  // 切换摄像头设备
+  const handleCameraDeviceChange = async (deviceId: string) => {
+    if (!isCameraEnabled) return
+    
+    addDebugLog(`切换摄像头设备: ${deviceId}`)
+    setSelectedCameraId(deviceId)
+    
+    try {
+      // 停止当前摄像头流
+      if (cameraStream) {
+        cameraStream.getTracks().forEach((track) => track.stop())
+      }
+      
+      // 启动新的摄像头流
+      const constraints: MediaStreamConstraints = {
+        video: {
+          deviceId: deviceId ? { exact: deviceId } : undefined,
+          width: 640,
+          height: 480
+        }
+      }
+      
+      const stream = await navigator.mediaDevices.getUserMedia(constraints)
+      setCameraStream(stream)
+      setCameraError(null)
+      addDebugLog(`摄像头切换成功: ${deviceId}`)
+      toast.success("摄像头已切换")
+      
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "未知错误"
+      setCameraError(`摄像头切换失败: ${errorMessage}`)
+      addDebugLog(`摄像头切换失败: ${errorMessage}`)
+      toast.error("摄像头切换失败")
+      console.error("Camera device change failed:", error)
+    }
   }
 
   // 磁吸边缘效果
@@ -604,6 +659,9 @@ console.log("Camera:", {isCameraEnabled, cameraStream, cameraError})
           onPersonDetectionToggle={handlePersonDetectionToggle}
           onDeviceChange={(device) => {
             addDebugLog(`设备切换: ${device.type} -> ${device.deviceId}`)
+            if (device.type === 'camera') {
+              handleCameraDeviceChange(device.deviceId)
+            }
           }}
         />
       </motion.div>

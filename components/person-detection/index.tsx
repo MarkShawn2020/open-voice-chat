@@ -69,17 +69,17 @@ export const PersonDetection: React.FC<PersonDetectionProps> = ({
       }
     }, [onDetectionUpdate]),
 
-    onPersonEntered: useCallback((person) => {
+    onPersonEntered: useCallback((person: any) => {
       toast.info(`检测到新人员: #${person.id.slice(-4)}`)
       onPersonEntered?.(person.id)
     }, [onPersonEntered]),
 
-    onPersonLeft: useCallback((personId) => {
+    onPersonLeft: useCallback((personId: string) => {
       toast.info(`人员离开: #${personId.slice(-4)}`)
       onPersonLeft?.(personId)
     }, [onPersonLeft]),
 
-    onError: useCallback((error) => {
+    onError: useCallback((error: Error) => {
       console.error("Person detection error:", error)
       toast.error(`人员检测错误: ${error.message}`)
     }, [])
@@ -87,21 +87,33 @@ export const PersonDetection: React.FC<PersonDetectionProps> = ({
 
   // 初始化检测器
   useEffect(() => {
-    if (videoElement && enabled) {
-      try {
-        detectorRef.current = new PersonDetector(videoElement, config, callbacks)
-        stateAnalyzerRef.current = new PersonStateAnalyzer()
-        
-        if (isRunning) {
-          detectorRef.current.start()
+    let isMounted = true
+    
+    const initializeDetector = async () => {
+      if (videoElement && enabled) {
+        try {
+          detectorRef.current = new PersonDetector(videoElement, config, callbacks)
+          stateAnalyzerRef.current = new PersonStateAnalyzer()
+          
+          // 等待MediaPipe初始化完成
+          await new Promise(resolve => setTimeout(resolve, 1000))
+          
+          if (isMounted && isRunning && detectorRef.current) {
+            await detectorRef.current.start()
+          }
+        } catch (error) {
+          console.error("Failed to initialize person detector:", error)
+          if (isMounted) {
+            toast.error("人员检测初始化失败")
+          }
         }
-      } catch (error) {
-        console.error("Failed to initialize person detector:", error)
-        toast.error("人员检测初始化失败")
       }
     }
 
+    initializeDetector()
+
     return () => {
+      isMounted = false
       if (detectorRef.current) {
         detectorRef.current.stop()
       }
@@ -110,13 +122,22 @@ export const PersonDetection: React.FC<PersonDetectionProps> = ({
 
   // 控制检测器运行状态
   useEffect(() => {
-    if (detectorRef.current) {
-      if (enabled && isRunning) {
-        detectorRef.current.start()
-      } else {
-        detectorRef.current.stop()
+    const startDetector = async () => {
+      if (detectorRef.current) {
+        if (enabled && isRunning) {
+          try {
+            await detectorRef.current.start()
+          } catch (error) {
+            console.error("Failed to start detector:", error)
+            toast.error("启动人员检测失败")
+          }
+        } else {
+          detectorRef.current.stop()
+        }
       }
     }
+    
+    startDetector()
   }, [enabled, isRunning])
 
   // 更新配置

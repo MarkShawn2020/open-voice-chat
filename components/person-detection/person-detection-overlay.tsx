@@ -76,9 +76,9 @@ export const PersonDetectionOverlay: React.FC<PersonDetectionOverlayProps> = ({
               </Badge>
             </div>
             <div className="flex items-center justify-between text-xs">
-              <span>FPS:</span>
+              <span>处理时间:</span>
               <Badge variant="secondary" className="bg-gray-500/20 text-gray-200">
-                {detectionResult.fps.toFixed(1)}
+                {detectionResult.processingTime}ms
               </Badge>
             </div>
           </CardContent>
@@ -298,9 +298,45 @@ const PersonDetailCard: React.FC<PersonDetailCardProps> = ({ person, index }) =>
           {person.features.eyesDetected && (
             <div className="text-xs text-green-400">👁️ 检测到眼睛</div>
           )}
+
+          {/* 手势显示 */}
+          {person.gestureState && (
+            <div className="space-y-1 pt-1 border-t border-white/10">
+              <div className="text-xs text-gray-300">手势:</div>
+              {person.gestureState.isPinching && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs">🤏</span>
+                  <span className="text-xs text-purple-400">捏合</span>
+                </div>
+              )}
+              {person.gestureState.isPointing && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs">👉</span>
+                  <span className="text-xs text-blue-400">指向</span>
+                </div>
+              )}
+              {person.gestureState.isWaving && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs">👋</span>
+                  <span className="text-xs text-green-400">挥手</span>
+                </div>
+              )}
+              {person.gestureState.isThumpsUp && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs">👍</span>
+                  <span className="text-xs text-yellow-400">点赞</span>
+                </div>
+              )}
+              {person.gestureState.confidence > 0 && (
+                <div className="text-xs text-gray-400">
+                  置信度: {(person.gestureState.confidence * 100).toFixed(0)}%
+                </div>
+              )}
+            </div>
+          )}
           
           <div className="text-xs text-gray-400">
-            跟踪: {person.trackingFrames} 帧
+            检测时间: {new Date(person.timestamp).toLocaleTimeString()}
           </div>
         </CardContent>
       </Card>
