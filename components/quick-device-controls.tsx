@@ -17,7 +17,8 @@ import {
   Mic,
   MicOff,
   Volume2,
-  VolumeX
+  VolumeX,
+  Users
 } from "lucide-react"
 import React, { useEffect, useState } from "react"
 
@@ -25,9 +26,11 @@ interface QuickDeviceControlsProps {
   isMicEnabled?: boolean
   isSpeakerEnabled?: boolean
   isCameraEnabled?: boolean
+  isPersonDetectionEnabled?: boolean
   onMicToggle?: () => void
   onSpeakerToggle?: () => void
   onCameraToggle?: () => void
+  onPersonDetectionToggle?: () => void
   onDeviceChange?: (device: { type: 'microphone' | 'speaker' | 'camera', deviceId: string }) => void
   className?: string
 }
@@ -36,9 +39,11 @@ export const QuickDeviceControls: React.FC<QuickDeviceControlsProps> = ({
   isMicEnabled,
   isSpeakerEnabled = true,
   isCameraEnabled = false,
+  isPersonDetectionEnabled = false,
   onMicToggle,
   onSpeakerToggle,
   onCameraToggle,
+  onPersonDetectionToggle,
   onDeviceChange,
   className = ""
 }) => {
@@ -292,6 +297,23 @@ export const QuickDeviceControls: React.FC<QuickDeviceControlsProps> = ({
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
+      </div>
+
+      {/* 人员检测控制 */}
+      <div className="flex items-center">
+        <Button
+          variant={isPersonDetectionEnabled ? "default" : "secondary"}
+          size="sm"
+          onClick={onPersonDetectionToggle}
+          disabled={!isCameraEnabled}
+          className="flex items-center gap-1"
+          title={!isCameraEnabled ? "请先启用摄像头" : isPersonDetectionEnabled ? "关闭人员检测" : "开启人员检测"}
+        >
+          <Users className="h-4 w-4" />
+          <span className="hidden sm:inline text-xs">
+            {isPersonDetectionEnabled ? "检测中" : "人员检测"}
+          </span>
+        </Button>
       </div>
     </div>
   )

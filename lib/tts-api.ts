@@ -23,6 +23,7 @@ export class TTSService {
    * @returns 音频URL或null
    */
   static async generateSpeech(request: TTSRequest): Promise<string | null> {
+    console.info('[generateSpeech] ', request)
     const { text, voiceType, config } = request
 
     if (!config.appId || !config.accessToken) {

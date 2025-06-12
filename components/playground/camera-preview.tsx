@@ -10,6 +10,7 @@ interface CameraPreviewProps {
   cameraStream: MediaStream | null
   cameraError: string | null
   onCameraToggle: () => void
+  onVideoRef?: (video: HTMLVideoElement | null) => void
 }
 
 export const CameraPreview: React.FC<CameraPreviewProps> = ({
@@ -17,6 +18,7 @@ export const CameraPreview: React.FC<CameraPreviewProps> = ({
   cameraStream,
   cameraError,
   onCameraToggle,
+  onVideoRef,
 }) => {
   const [videoRef, setVideoRef] = useState<HTMLVideoElement | null>(null)
   const [isSnapping, setIsSnapping] = useState(false)
@@ -81,7 +83,10 @@ export const CameraPreview: React.FC<CameraPreviewProps> = ({
         console.log('Video play failed:', error)
       })
     }
-  }, [videoRef, cameraStream])
+    
+    // 传递video元素引用
+    onVideoRef?.(videoRef)
+  }, [videoRef, cameraStream, onVideoRef])
 
   const snapToEdge = (x: number, y: number) => {
     if (typeof window === 'undefined') return { x, y, shouldSnap: false }

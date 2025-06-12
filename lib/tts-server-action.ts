@@ -19,6 +19,7 @@ export interface TTSResponse {
 }
 
 export async function generateTTSSpeech(request: TTSRequest): Promise<TTSResponse> {
+  console.info('[generateTTSSpeech] Generating TTS request: ', request)
   const { text, voiceType, appId, accessToken } = request
 
   if (!appId || !accessToken) {
@@ -67,6 +68,7 @@ export async function generateTTSSpeech(request: TTSRequest): Promise<TTSRespons
     }
 
     const data = await response.json() as { code: number; data?: string; message?: string }
+    console.log("TTS API response:", data)
     
     if (data.code === 3000 && data.data) {
       // 返回base64编码的音频数据

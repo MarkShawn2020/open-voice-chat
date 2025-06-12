@@ -1,6 +1,6 @@
 // RTC 操作原子
 import { AGENT_PREFIX } from "@/constants"
-import { startVoiceChat, stopVoiceChat } from "@/lib/voice-chat-actions"
+// import { startVoiceChat, stopVoiceChat } from "@/lib/voice-chat-actions"
 import { appConfigAtom } from "@/store/app-config"
 import { handleRoomBinaryMessageReceived } from "@/store/message-handlers"
 
@@ -179,60 +179,13 @@ export const rtcActionsAtom = atom(null, (get: Getter, set: Setter, action: RTCA
           error: null,
         }))
 
-        startVoiceChat({
-          appId: config.rtc.appId,
-          roomId: config.rtc.roomId,
-          targetUserId: config.rtc.uid,
-          systemMessage: action.systemMessage || config.llm.systemMessage,
-          welcomeMessage: action.welcomeMessage || config.llm.welcomeMessage,
-          asr: {
-            appId: config.asr.appId,
-            accessToken: config.asr.accessToken,
-            cluster: config.asr.cluster,
-            mode: config.asr.mode,
-          },
-          tts: {
-            appId: config.tts.appId,
-            accessToken: config.tts.accessToken,
-            voiceType: config.tts.voiceType,
-            speechRate: config.tts.speechRate,
-            pitchRate: config.tts.pitchRate,
-          },
-          llm: {
-            endpointId: config.llm.endpointId,
-            temperature: config.llm.temperature,
-            maxTokens: config.llm.maxTokens,
-            topP: config.llm.topP,
-          },
-        })
-          .then((result) => {
-            if (result.success && result.taskId) {
-              console.log("启动 AI 语音聊天成功")
-              set(voiceChatStateAtom, (prev) => ({
-                ...prev,
-                isAgentActive: true,
-                taskId: result.taskId || null,
-                agentUserId: `${AGENT_PREFIX}${result.taskId}`,
-                isStarting: false,
-                error: null,
-              }))
-            } else {
-              console.error("启动 AI 语音聊天失败:", result.error)
-              set(voiceChatStateAtom, (prev) => ({
-                ...prev,
-                isStarting: false,
-                error: result.error || "启动智能体失败",
-              }))
-            }
-          })
-          .catch((error) => {
-            console.error("启动 AI 语音聊天失败:", error)
-            set(voiceChatStateAtom, (prev) => ({
-              ...prev,
-              isStarting: false,
-              error: error instanceof Error ? error.message : "启动智能体失败",
-            }))
-          })
+        // 临时禁用 voice chat 功能以避免 @volcengine/openapi 客户端打包问题
+        console.log("Voice chat temporarily disabled")
+        set(voiceChatStateAtom, (prev) => ({
+          ...prev,
+          isStarting: false,
+          error: "语音聊天功能暂时禁用",
+        }))
       }
       break
 
@@ -245,7 +198,8 @@ export const rtcActionsAtom = atom(null, (get: Getter, set: Setter, action: RTCA
           error: null,
         }))
 
-        stopVoiceChat(config.rtc.appId, config.rtc.roomId, voiceChatState.taskId)
+        // 临时禁用 voice chat 功能
+        Promise.resolve({ success: true })
           .then((result) => {
             if (result.success) {
               console.log("停止 AI 语音聊天成功")

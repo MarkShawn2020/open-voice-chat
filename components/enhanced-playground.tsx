@@ -6,6 +6,7 @@ import { ErrorDiagnostics } from "@/components/error-diagnostics"
 import { ModuleTester } from "@/components/module-tester"
 import { AIControlPanel } from "@/components/playground/ai-control-panel"
 import { CameraPreview } from "@/components/playground/camera-preview"
+import { PersonDetection } from "@/components/person-detection"
 import { ConfigModal } from "@/components/playground/config-modal"
 import { DebugPanel } from "@/components/playground/debug-panel"
 import { MainControls } from "@/components/playground/main-controls"
@@ -13,6 +14,7 @@ import { QuickConfigPanel } from "@/components/playground/quick-config-panel"
 import { StatusBar } from "@/components/playground/status-bar"
 import { AIConfig, QuickConfig, TestResult } from "@/components/playground/types"
 import { VoiceConfigPanel } from "@/components/playground/voice-config-panel"
+import { PersonDetectionConfigPanel } from "@/components/playground/person-detection-config-panel"
 import { QuickDeviceControls } from "@/components/quick-device-controls"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { appConfigAtom } from "@/store/app-config"
@@ -95,6 +97,26 @@ export const EnhancedPlayground: React.FC = () => {
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null)
   const [cameraError, setCameraError] = useState<string | null>(null)
   const [videoRef, setVideoRef] = useState<HTMLVideoElement | null>(null)
+  
+  // 人员检测状态
+  const [isPersonDetectionEnabled, setIsPersonDetectionEnabled] = useState(false)
+  const [personDetectionConfig, setPersonDetectionConfig] = useState({
+    detectionInterval: 200,
+    minConfidence: 0.6,
+    maxPersons: 10,
+    motionSensitivity: 0.4,
+    attentionSensitivity: 0.7,
+    interactionSensitivity: 0.5,
+    enableFaceRecognition: true,
+    enablePoseDetection: true
+  })
+  const [personDetectionStats, setPersonDetectionStats] = useState({
+    totalDetections: 0,
+    averageStayDuration: 0,
+    maxSimultaneousPersons: 0,
+    lookingAtCameraCount: 0,
+    interactingCount: 0
+  })
   const [dragConstraints, setDragConstraints] = useState({
     top: 0,
     left: 0,
@@ -362,6 +384,41 @@ export const EnhancedPlayground: React.FC = () => {
     addDebugLog(`扬声器${isSpeakerEnabled ? "关闭" : "开启"}`)
   }
 
+  // 切换人员检测
+  const handlePersonDetectionToggle = () => {
+    if (!isCameraEnabled) {
+      toast.error("请先启用摄像头")
+      return
+    }
+    setIsPersonDetectionEnabled(!isPersonDetectionEnabled)
+    addDebugLog(`人员检测${isPersonDetectionEnabled ? "关闭" : "开启"}`)
+  }
+
+  // 人员检测回调
+  const handlePersonEntered = (personId: string) => {
+    addDebugLog(`新人员进入: ${personId}`)
+  }
+
+  const handlePersonLeft = (personId: string) => {
+    addDebugLog(`人员离开: ${personId}`)
+  }
+
+  // 人员检测配置更新
+  const handlePersonDetectionConfigChange = (newConfig: Partial<typeof personDetectionConfig>) => {
+    setPersonDetectionConfig(prev => ({ ...prev, ...newConfig }))
+  }
+
+  // 重置人员检测统计
+  const handleResetPersonDetectionStats = () => {
+    setPersonDetectionStats({
+      totalDetections: 0,
+      averageStayDuration: 0,
+      maxSimultaneousPersons: 0,
+      lookingAtCameraCount: 0,
+      interactingCount: 0
+    })
+  }
+
   // 磁吸边缘效果
   const snapToEdge = (x: number, y: number) => {
     if (typeof window === 'undefined') return { x, y }
@@ -461,6 +518,17 @@ console.log("Camera:", {isCameraEnabled, cameraStream, cameraError})
                     onASRModeChange={(mode) => setQuickConfig({ ...quickConfig, asrMode: mode })}
                     onApplyConfig={applyQuickConfig}
                   />
+
+                  <PersonDetectionConfigPanel
+                    enabled={isPersonDetectionEnabled}
+                    isRunning={isPersonDetectionEnabled}
+                    config={personDetectionConfig}
+                    stats={personDetectionStats}
+                    onToggle={handlePersonDetectionToggle}
+                    onConfigChange={handlePersonDetectionConfigChange}
+                    onResetStats={handleResetPersonDetectionStats}
+                    cameraEnabled={isCameraEnabled}
+                  />
                 </TabsContent>
 
                 <TabsContent value="config" className="mt-0">
@@ -498,12 +566,27 @@ console.log("Camera:", {isCameraEnabled, cameraStream, cameraError})
         </div>
       </div>
 
-      <CameraPreview
-        isCameraEnabled={isCameraEnabled}
-        cameraStream={cameraStream}
-        cameraError={cameraError}
-        onCameraToggle={handleCameraToggle}
-      />
+      <div className="relative">
+        <CameraPreview
+          isCameraEnabled={isCameraEnabled}
+          cameraStream={cameraStream}
+          cameraError={cameraError}
+          onCameraToggle={handleCameraToggle}
+          onVideoRef={setVideoRef}
+        />
+        
+        {/* 人员检测覆盖层 */}
+        {isCameraEnabled && cameraStream && videoRef && (
+          <PersonDetection
+            videoElement={videoRef}
+            enabled={isPersonDetectionEnabled}
+            showOverlay={true}
+            showPanel={false}
+            onPersonEntered={handlePersonEntered}
+            onPersonLeft={handlePersonLeft}
+          />
+        )}
+      </div>
 
       {/* 快速设备控制栏 - 底部固定 */}
       <motion.div 
@@ -515,8 +598,10 @@ console.log("Camera:", {isCameraEnabled, cameraStream, cameraError})
         <QuickDeviceControls
           isSpeakerEnabled={isSpeakerEnabled}
           isCameraEnabled={isCameraEnabled}
+          isPersonDetectionEnabled={isPersonDetectionEnabled}
           onSpeakerToggle={handleSpeakerToggle}
           onCameraToggle={handleCameraToggle}
+          onPersonDetectionToggle={handlePersonDetectionToggle}
           onDeviceChange={(device) => {
             addDebugLog(`设备切换: ${device.type} -> ${device.deviceId}`)
           }}

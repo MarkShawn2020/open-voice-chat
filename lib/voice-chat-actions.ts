@@ -1,8 +1,48 @@
 'use server'
 
 import { AGENT_PREFIX } from "@/constants"
-import { Signer } from '@volcengine/openapi'
 import { v4 as uuidv4 } from 'uuid'
+import crypto from 'crypto'
+
+// 简化的签名函数，避免使用 @volcengine/openapi
+function createHMACSignature(
+  secretKey: string,
+  method: string,
+  host: string,
+  path: string,
+  query: string,
+  headers: Record<string, string>,
+  body: string
+): string {
+  const canonicalHeaders = Object.keys(headers)
+    .sort()
+    .map(key => `${key.toLowerCase()}:${headers[key]}`)
+    .join('\n')
+    
+  const signedHeaders = Object.keys(headers)
+    .sort()
+    .map(key => key.toLowerCase())
+    .join(';')
+    
+  const canonicalRequest = [
+    method,
+    path,
+    query,
+    canonicalHeaders,
+    '',
+    signedHeaders,
+    crypto.createHash('sha256').update(body).digest('hex')
+  ].join('\n')
+  
+  const stringToSign = `AWS4-HMAC-SHA256\n${headers['X-Date']}\n${headers['X-Date'].slice(0, 8)}/cn-north-1/rtc/aws4_request\n${crypto.createHash('sha256').update(canonicalRequest).digest('hex')}`
+  
+  const kDate = crypto.createHmac('sha256', `AWS4${secretKey}`).update(headers['X-Date'].slice(0, 8)).digest()
+  const kRegion = crypto.createHmac('sha256', kDate).update('cn-north-1').digest()
+  const kService = crypto.createHmac('sha256', kRegion).update('rtc').digest()
+  const kSigning = crypto.createHmac('sha256', kService).update('aws4_request').digest()
+  
+  return crypto.createHmac('sha256', kSigning).update(stringToSign).digest('hex')
+}
 
 // Volcengine API 配置
 const VOLCENGINE_API_BASE = 'https://rtc.volcengineapi.com'
@@ -55,7 +95,7 @@ interface VoiceChatApiResponse {
 /**
  * 创建 Volcengine API 认证头
  */
-function createAuthHeaders(action: string, version: string, body: Record<string, unknown>): Record<string, string> {
+async function createAuthHeaders(action: string, version: string, body: Record<string, unknown>): Promise<Record<string, string>> {
   const accessKey = process.env.VOLCENGINE_ACCESS_KEY
   const secretKey = process.env.VOLCENGINE_SECRET_KEY
 
@@ -77,6 +117,7 @@ function createAuthHeaders(action: string, version: string, body: Record<string,
     body,
   }
 
+  const Signer = await getSigner()
   const signer = new Signer(openApiRequestData, 'rtc')
   signer.addAuthorization({
     accessKeyId: accessKey,
@@ -180,7 +221,7 @@ export async function startVoiceChat(config: StartVoiceChatConfig): Promise<{
     const url = `${VOLCENGINE_API_BASE}?Action=StartVoiceChat&Version=${API_VERSION}`
     
     // 获取认证信息
-    const headers = createAuthHeaders('StartVoiceChat', API_VERSION, requestBody)
+    const headers = await createAuthHeaders('StartVoiceChat', API_VERSION, requestBody)
     
     // 发送请求
     const response = await fetch(url, {
@@ -234,7 +275,7 @@ export async function stopVoiceChat(appId: string, roomId: string, taskId: strin
     const url = `${VOLCENGINE_API_BASE}?Action=StopVoiceChat&Version=${API_VERSION}`
     
     // 获取认证信息
-    const headers = createAuthHeaders('StopVoiceChat', API_VERSION, requestBody)
+    const headers = await createAuthHeaders('StopVoiceChat', API_VERSION, requestBody)
     
     // 发送请求
     const response = await fetch(url, {
@@ -287,7 +328,7 @@ export async function getVoiceChatStatus(appId: string, taskId: string): Promise
     const url = `${VOLCENGINE_API_BASE}?Action=GetVoiceChatStatus&Version=${API_VERSION}`
     
     // 获取认证信息
-    const headers = createAuthHeaders('GetVoiceChatStatus', API_VERSION, requestBody)
+    const headers = await createAuthHeaders('GetVoiceChatStatus', API_VERSION, requestBody)
     
     // 发送请求
     const response = await fetch(url, {
