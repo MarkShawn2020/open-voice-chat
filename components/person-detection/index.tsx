@@ -70,12 +70,12 @@ export const PersonDetection: React.FC<PersonDetectionProps> = ({
     }, [onDetectionUpdate]),
 
     onPersonEntered: useCallback((person: any) => {
-      toast.info(`检测到新人员: #${person.id.slice(-4)}`)
+      // toast.info(`检测到新人员: #${person.id.slice(-4)}`)
       onPersonEntered?.(person.id)
     }, [onPersonEntered]),
 
     onPersonLeft: useCallback((personId: string) => {
-      toast.info(`人员离开: #${personId.slice(-4)}`)
+      // toast.info(`人员离开: #${personId.slice(-4)}`)
       onPersonLeft?.(personId)
     }, [onPersonLeft]),
 
@@ -207,7 +207,7 @@ export const PersonDetection: React.FC<PersonDetectionProps> = ({
   }
 
   return (
-    <div className={`person-detection-container ${className}`}>
+    <div className={`person-detection-container ${className} z-[9999]`}>
       {/* 人员检测覆盖层 */}
       {showOverlay && videoElement && (
         <PersonDetectionOverlay

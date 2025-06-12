@@ -86,9 +86,9 @@ export const PersonDetectionOverlay: React.FC<PersonDetectionOverlayProps> = ({
       </motion.div>
 
       {/* 人员详细信息列表 */}
-      {showPersonDetails && detectionResult.persons.length > 0 && (
+      {showPersonDetails && (
         <motion.div
-          className="absolute bottom-2 right-2 z-10 max-w-80"
+          className="absolute bottom-2 right-2 z-10 max-w-80 z-[9999]"
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.3 }}
@@ -234,7 +234,7 @@ const PersonDetailCard: React.FC<PersonDetailCardProps> = ({ person, index }) =>
       exit={{ opacity: 0, x: 20 }}
       transition={{ delay: index * 0.1 }}
     >
-      <Card className="bg-black/70 backdrop-blur-sm border-white/20 text-white text-xs">
+      <Card className="bg-black/70 backdrop-blur-sm border-white/20 text-white text-xs z-[9999]">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm flex items-center justify-between">
             <span>人员 #{person.id.slice(-4)}</span>

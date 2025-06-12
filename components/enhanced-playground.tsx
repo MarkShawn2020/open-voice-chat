@@ -373,7 +373,7 @@ export const EnhancedPlayground: React.FC = () => {
         }
         
         addDebugLog("摄像头开启成功")
-        toast.success("摄像头已开启")
+        // toast.success("摄像头已开启")
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "未知错误"
         let userMessage = "摄像头启动失败"
