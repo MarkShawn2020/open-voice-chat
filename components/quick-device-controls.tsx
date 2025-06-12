@@ -1,27 +1,25 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { 
-  Mic, 
-  MicOff, 
-  Volume2, 
-  VolumeX, 
-  Camera, 
-  CameraOff,
-  Settings,
-  ChevronUp
-} from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuLabel
+  DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu"
-import React, { useState, useEffect } from "react"
-import { DeviceSelector } from "./device-selector"
-import { useMicStore, useMicActions, useInitMics } from "@/store/mic"
+import { useInitMics, useMicActions, useMicStore } from "@/store/mic"
+import {
+  Camera,
+  CameraOff,
+  ChevronUp,
+  Mic,
+  MicOff,
+  Volume2,
+  VolumeX
+} from "lucide-react"
+import React, { useEffect, useState } from "react"
 
 interface QuickDeviceControlsProps {
   isMicEnabled?: boolean
@@ -81,6 +79,7 @@ export const QuickDeviceControls: React.FC<QuickDeviceControlsProps> = ({
           speakers: speakers.length,
           cameras: cameras.length
         })
+        
         
         // 设置默认选择
         if (speakers.length > 0 && !selectedSpeaker) {
@@ -340,17 +339,6 @@ export const QuickDeviceControls: React.FC<QuickDeviceControlsProps> = ({
 
       {/* 分隔线 */}
       <div className="h-6 w-px bg-gray-300 mx-2" />
-
-      {/* 设备设置 */}
-      <DeviceSelector 
-        onDeviceChange={handleDeviceChange}
-        trigger={
-          <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900">
-            <Settings className="h-4 w-4" />
-            <span className="hidden sm:inline ml-2">设备</span>
-          </Button>
-        }
-      />
 
       {/* 设备状态指示 */}
       <div className="hidden lg:flex items-center gap-3 ml-4 text-xs text-gray-500">

@@ -3,13 +3,10 @@
 import { ChatHistory } from "@/components/chat/chat-history"
 import { Config } from "@/components/config/config"
 import { DebugMonitor } from "@/components/debug-monitor"
+import { DeviceStatus } from "@/components/device-status"
 import { ErrorDiagnostics } from "@/components/error-diagnostics"
 import { ModuleTester } from "@/components/module-tester"
-import { VoiceSelector } from "@/components/voice-selector"
-import { DeviceSelector } from "@/components/device-selector"
-import { DeviceStatus } from "@/components/device-status"
 import { QuickDeviceControls } from "@/components/quick-device-controls"
-import { useMicStore, useMicActions } from "@/store/mic"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -18,7 +15,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
+import { VoiceSelector } from "@/components/voice-selector"
 import { appConfigAtom } from "@/store/app-config"
+import { useMicActions, useMicStore } from "@/store/mic"
 import { rtcActionsAtom } from "@/store/rtc-actions"
 import { rtcConfigAtom } from "@/store/rtc-config"
 import { rtcStateAtom } from "@/store/rtc-state"
@@ -38,11 +37,10 @@ import {
   Play,
   RefreshCw,
   Settings,
-  TestTube,
   Users,
   Wifi,
   WifiOff,
-  X,
+  X
 } from "lucide-react"
 import React, { useEffect, useState } from "react"
 import { toast } from "sonner"
@@ -85,6 +83,11 @@ export const EnhancedPlayground: React.FC = () => {
     ttsVoice: appConfig.tts.voiceType,
     llmTemp: appConfig.llm.temperature,
   })
+
+  // 设备状态
+  const [isCameraEnabled, setIsCameraEnabled] = useState(false)
+  const [isSpeakerEnabled, setIsSpeakerEnabled] = useState(true)
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null)
 
   // AI配置
   const [aiConfig, setAiConfig] = useState({
@@ -205,6 +208,15 @@ export const EnhancedPlayground: React.FC = () => {
     }
   }, [voiceChatState.isAgentActive, voiceChatState.error])
 
+  // 清理摄像头资源
+  useEffect(() => {
+    return () => {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop())
+      }
+    }
+  }, [cameraStream])
+
   // 加入房间
   const handleJoinRoom = async () => {
     addDebugLog("尝试加入房间...")
@@ -242,6 +254,38 @@ export const EnhancedPlayground: React.FC = () => {
   const handleStopVoiceChat = () => {
     addDebugLog("停止AI智能体")
     dispatchRtcAction({ type: "STOP_VOICE_CHAT" })
+  }
+
+  // 切换摄像头
+  const handleCameraToggle = async () => {
+    if (isCameraEnabled) {
+      // 关闭摄像头
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop())
+        setCameraStream(null)
+      }
+      setIsCameraEnabled(false)
+      addDebugLog("摄像头关闭")
+    } else {
+      // 开启摄像头
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { width: 640, height: 480 } 
+        })
+        setCameraStream(stream)
+        setIsCameraEnabled(true)
+        addDebugLog("摄像头开启")
+      } catch (error) {
+        addDebugLog(`摄像头启动失败: ${error}`)
+        console.error("Camera access failed:", error)
+      }
+    }
+  }
+
+  // 切换扬声器
+  const handleSpeakerToggle = () => {
+    setIsSpeakerEnabled(!isSpeakerEnabled)
+    addDebugLog(`扬声器${isSpeakerEnabled ? "关闭" : "开启"}`)
   }
 
   // 防止服务端渲染不匹配
@@ -305,12 +349,6 @@ export const EnhancedPlayground: React.FC = () => {
             
             {/* 主要操作按钮 */}
             <div className="flex items-center gap-2">
-              {/* 设备设置按钮 - 始终显示 */}
-              <DeviceSelector 
-                onDeviceChange={(device) => {
-                  addDebugLog(`设备切换: ${device.type} -> ${device.deviceId}`)
-                }}
-              />
               
               {!rtcState.isConnected ? (
                 <Button onClick={handleJoinRoom} disabled={!config} size="sm">
@@ -721,6 +759,38 @@ export const EnhancedPlayground: React.FC = () => {
                     <ModuleTester />
                   </CardContent>
                 </Card>
+                
+                {/* 摄像头预览 */}
+                {isCameraEnabled && cameraStream && (
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-2 text-base">
+                        <Camera className="h-4 w-4 text-green-600" />
+                        摄像头预览
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="relative">
+                        <video
+                          ref={(video) => {
+                            if (video && cameraStream) {
+                              video.srcObject = cameraStream
+                              video.play()
+                            }
+                          }}
+                          className="w-full rounded-lg bg-black"
+                          style={{ aspectRatio: '4/3' }}
+                          muted
+                          playsInline
+                        />
+                        <div className="absolute top-2 right-2 flex items-center gap-1 rounded-full bg-green-500 px-2 py-1 text-xs text-white">
+                          <div className="h-2 w-2 rounded-full bg-white animate-pulse" />
+                          <span>录制中</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
             </div>
           </div>
@@ -730,14 +800,10 @@ export const EnhancedPlayground: React.FC = () => {
       {/* 快速设备控制栏 - 底部固定 */}
       <div className="fixed bottom-0 left-0 right-0 z-40">
         <QuickDeviceControls
-          isSpeakerEnabled={true}
-          isCameraEnabled={false}
-          onSpeakerToggle={() => {
-            addDebugLog("扬声器开关切换")
-          }}
-          onCameraToggle={() => {
-            addDebugLog("摄像头开关切换")
-          }}
+          isSpeakerEnabled={isSpeakerEnabled}
+          isCameraEnabled={isCameraEnabled}
+          onSpeakerToggle={handleSpeakerToggle}
+          onCameraToggle={handleCameraToggle}
           onDeviceChange={(device) => {
             addDebugLog(`设备切换: ${device.type} -> ${device.deviceId}`)
           }}
