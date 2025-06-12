@@ -3,7 +3,6 @@
 import { ChatHistory } from "@/components/chat/chat-history"
 import { Config } from "@/components/config/config"
 import { DebugMonitor } from "@/components/debug-monitor"
-import { DeviceStatus } from "@/components/device-status"
 import { ErrorDiagnostics } from "@/components/error-diagnostics"
 import { ModuleTester } from "@/components/module-tester"
 import { QuickDeviceControls } from "@/components/quick-device-controls"
@@ -22,6 +21,7 @@ import { rtcActionsAtom } from "@/store/rtc-actions"
 import { rtcConfigAtom } from "@/store/rtc-config"
 import { rtcStateAtom } from "@/store/rtc-state"
 import { voiceChatStateAtom } from "@/store/voice-chat-state"
+import { AnimatePresence, motion } from "framer-motion"
 import { useAtom } from "jotai"
 import {
   AlertCircle,
@@ -29,7 +29,6 @@ import {
   BotOff,
   Camera,
   CheckCircle,
-  MessageSquare,
   Mic,
   MicOff,
   Monitor,
@@ -38,15 +37,13 @@ import {
   Play,
   RefreshCw,
   Settings,
-  TestTube,
   Users,
   Wifi,
   WifiOff,
-  X,
+  X
 } from "lucide-react"
 import React, { useEffect, useState } from "react"
 import { toast } from "sonner"
-import { motion, AnimatePresence } from "framer-motion"
 
 interface TestResult {
   module: string
@@ -396,18 +393,6 @@ export const EnhancedPlayground: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <Users className="h-4 w-4 text-blue-500" />
                   <span className="text-blue-600">{rtcState.remoteUsers.length} 用户在线</span>
-                </div>
-
-                {/* 设备状态显示 */}
-                <div className="hidden lg:block">
-                  <DeviceStatus
-                    isMicEnabled={curMicState.isOn}
-                    isSpeakerEnabled={true}
-                    isCameraEnabled={false}
-                    microphoneName="默认麦克风"
-                    speakerName="默认扬声器"
-                    cameraName="默认摄像头"
-                  />
                 </div>
               </div>
             </div>
