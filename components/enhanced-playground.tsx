@@ -1,20 +1,19 @@
 "use client"
 
 import { ChatHistory } from "@/components/chat/chat-history"
-import { Config } from "@/components/config/config"
 import { DebugMonitor } from "@/components/debug-monitor"
 import { ErrorDiagnostics } from "@/components/error-diagnostics"
 import { ModuleTester } from "@/components/module-tester"
+import { AIControlPanel } from "@/components/playground/ai-control-panel"
+import { CameraPreview } from "@/components/playground/camera-preview"
+import { ConfigModal } from "@/components/playground/config-modal"
+import { DebugPanel } from "@/components/playground/debug-panel"
+import { MainControls } from "@/components/playground/main-controls"
+import { QuickConfigPanel } from "@/components/playground/quick-config-panel"
+import { StatusBar } from "@/components/playground/status-bar"
+import { VoiceConfigPanel } from "@/components/playground/voice-config-panel"
 import { QuickDeviceControls } from "@/components/quick-device-controls"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Slider } from "@/components/ui/slider"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Textarea } from "@/components/ui/textarea"
-import { VoiceSelector } from "@/components/voice-selector"
 import { appConfigAtom } from "@/store/app-config"
 import { useMicActions, useMicStore } from "@/store/mic"
 import { rtcActionsAtom } from "@/store/rtc-actions"
@@ -24,23 +23,9 @@ import { voiceChatStateAtom } from "@/store/voice-chat-state"
 import { AnimatePresence, motion, useMotionValue, useAnimation } from "framer-motion"
 import { useAtom } from "jotai"
 import {
-  AlertCircle,
   Bot,
-  BotOff,
-  Camera,
-  CheckCircle,
-  Mic,
-  MicOff,
   Monitor,
-  Phone,
-  PhoneOff,
-  Play,
-  RefreshCw,
   Settings,
-  Users,
-  Wifi,
-  WifiOff,
-  X
 } from "lucide-react"
 import React, { useEffect, useState } from "react"
 import { toast } from "sonner"
@@ -436,92 +421,15 @@ console.log("Camera:", {isCameraEnabled, cameraStream, cameraError})
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-      {/* 顶部状态栏 */}
-      <div className="border-b bg-white/90 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <h1 className="text-xl font-semibold text-gray-800">语音对话测试台</h1>
-              <div className="flex items-center gap-4 text-sm">
-                <div className="flex items-center gap-2">
-                  {rtcState.isConnected ? (
-                    <Wifi className="h-4 w-4 text-green-500" />
-                  ) : (
-                    <WifiOff className="h-4 w-4 text-gray-400" />
-                  )}
-                  <span className={rtcState.isConnected ? "text-green-600" : "text-gray-500"}>
-                    {rtcState.isConnected ? "已连接" : "未连接"}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {voiceChatState.isAgentActive ? (
-                    <Bot className="h-4 w-4 text-green-500" />
-                  ) : (
-                    <BotOff className="h-4 w-4 text-gray-400" />
-                  )}
-                  <span className={voiceChatState.isAgentActive ? "text-green-600" : "text-gray-500"}>
-                    AI: {voiceChatState.isAgentActive ? "运行" : "停止"}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Users className="h-4 w-4 text-blue-500" />
-                  <span className="text-blue-600">{rtcState.remoteUsers.length} 用户在线</span>
-                </div>
-              </div>
-            </div>
-
-            {/* 主要操作按钮 */}
-            <div className="flex items-center gap-2">
-              {!rtcState.isConnected ? (
-                <Button onClick={handleJoinRoom} disabled={!config} size="sm">
-                  <Phone className="mr-2 h-4 w-4" />
-                  加入房间
-                </Button>
-              ) : (
-                <>
-                  <Button
-                    onClick={toggleAudio}
-                    variant={curMicState.isOn ? "default" : "secondary"}
-                    size="sm"
-                    disabled={!curMicState.isPermissionGranted}
-                  >
-                    {curMicState.isOn ? <Mic className="mr-1 h-3 w-3" /> : <MicOff className="mr-1 h-3 w-3" />}
-                    麦克风
-                  </Button>
-                  {!voiceChatState.isAgentActive ? (
-                    <Button onClick={handleStartVoiceChat} disabled={voiceChatState.isStarting} size="sm">
-                      <Bot className="mr-2 h-4 w-4" />
-                      {voiceChatState.isStarting ? "启动中..." : "启动AI"}
-                    </Button>
-                  ) : (
-                    <Button
-                      onClick={handleStopVoiceChat}
-                      variant="destructive"
-                      disabled={voiceChatState.isStopping}
-                      size="sm"
-                    >
-                      <BotOff className="mr-2 h-4 w-4" />
-                      {voiceChatState.isStopping ? "停止中..." : "停止AI"}
-                    </Button>
-                  )}
-                  <Button onClick={handleLeaveRoom} variant="outline" size="sm">
-                    <PhoneOff className="mr-1 h-3 w-3" />
-                    离开房间
-                  </Button>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* 错误提示 */}
-          {(rtcState.error || voiceChatState.error) && (
-            <Alert variant="destructive" className="mt-3">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription className="text-sm">{rtcState.error || voiceChatState.error}</AlertDescription>
-            </Alert>
-          )}
-        </div>
-      </div>
+      <StatusBar>
+        <MainControls
+          onJoinRoom={handleJoinRoom}
+          onLeaveRoom={handleLeaveRoom}
+          onToggleAudio={toggleAudio}
+          onStartVoiceChat={handleStartVoiceChat}
+          onStopVoiceChat={handleStopVoiceChat}
+        />
+      </StatusBar>
 
       {/* 主要内容区域 */}
       <div className="container mx-auto flex h-full overflow-hidden p-4 pb-20">
@@ -545,310 +453,35 @@ console.log("Camera:", {isCameraEnabled, cameraStream, cameraError})
               </TabsList>
 
               <div className="mt-4 space-y-4">
-                {/* AI控制面板 */}
                 <TabsContent value="control" className="mt-0 space-y-4">
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base">AI配置</CardTitle>
-                      <CardDescription className="text-sm">调整AI智能体的行为参数</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium">系统消息</Label>
-                        <Textarea
-                          value={aiConfig.systemMessage}
-                          onChange={(e) => setAiConfig({ ...aiConfig, systemMessage: e.target.value })}
-                          rows={3}
-                          className="text-sm"
-                          placeholder="定义AI的角色和行为..."
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium">欢迎消息</Label>
-                        <Textarea
-                          value={aiConfig.welcomeMessage}
-                          onChange={(e) => setAiConfig({ ...aiConfig, welcomeMessage: e.target.value })}
-                          rows={2}
-                          className="text-sm"
-                          placeholder="AI的开场白..."
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium">LLM温度: {quickConfig.llmTemp}</Label>
-                        <Slider
-                          value={[quickConfig.llmTemp]}
-                          onValueChange={([value]: number[]) => setQuickConfig({ ...quickConfig, llmTemp: value! })}
-                          min={0}
-                          max={2}
-                          step={0.1}
-                          className="w-full"
-                        />
-                        <div className="flex justify-between text-xs text-gray-500">
-                          <span>保守</span>
-                          <span>创造性</span>
-                        </div>
-                      </div>
+                  <AIControlPanel
+                    aiConfig={aiConfig}
+                    quickConfig={quickConfig}
+                    onAIConfigChange={setAiConfig}
+                    onQuickConfigChange={setQuickConfig}
+                    onApplyConfig={applyQuickConfig}
+                  />
 
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium">AI音色</Label>
-                        <VoiceSelector
-                          value={appConfig.tts.voiceType}
-                          onChange={(voiceType) => {
-                            dispatchRtcAction({ type: "BIND_KEY", payload: { key: "tts.voiceType", value: voiceType } })
-                            toast.success("音色已更新")
-                          }}
-                          ttsConfig={{
-                            appId: appConfig.tts.appId,
-                            accessToken: appConfig.tts.accessToken,
-                          }}
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base">语音配置</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium">ASR模式</Label>
-                        <Select
-                          value={quickConfig.asrMode}
-                          onValueChange={(value) =>
-                            setQuickConfig({ ...quickConfig, asrMode: value as "realtime" | "bigmodel" })
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="realtime">流式识别</SelectItem>
-                            <SelectItem value="bigmodel">识别大模型</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium">TTS音色</Label>
-                        <VoiceSelector
-                          value={appConfig.tts.voiceType}
-                          onChange={(voiceType) =>
-                            dispatchRtcAction({ type: "BIND_KEY", payload: { key: "tts.voiceType", value: voiceType } })
-                          }
-                          ttsConfig={{
-                            appId: appConfig.tts.appId,
-                            accessToken: appConfig.tts.accessToken,
-                          }}
-                        />
-                      </div>
-
-                      <Button onClick={applyQuickConfig} className="w-full" size="sm">
-                        <RefreshCw className="mr-2 h-3 w-3" />
-                        应用配置
-                      </Button>
-                    </CardContent>
-                  </Card>
+                  <VoiceConfigPanel
+                    quickConfig={quickConfig}
+                    onQuickConfigChange={setQuickConfig}
+                    onApplyConfig={applyQuickConfig}
+                  />
                 </TabsContent>
 
-                {/* 详细配置面板 */}
                 <TabsContent value="config" className="mt-0">
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base">快速配置</CardTitle>
-                      <CardDescription className="text-sm">常用的配置参数</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      {/* 快速 RTC 配置 */}
-                      <div className="space-y-3">
-                        <Label className="text-sm font-medium">RTC 连接</Label>
-                        <div className="space-y-2">
-                          <div className="space-y-1">
-                            <Label className="text-xs text-gray-600">App ID</Label>
-                            <input
-                              type="text"
-                              className="w-full rounded-md border px-3 py-1.5 text-sm"
-                              value={appConfig.rtc.appId || ""}
-                              onChange={(e) =>
-                                dispatchRtcAction({
-                                  type: "BIND_KEY",
-                                  payload: { key: "rtc.appId", value: e.target.value },
-                                })
-                              }
-                              placeholder="RTC App ID"
-                            />
-                          </div>
-                          <div className="grid grid-cols-2 gap-2">
-                            <div className="space-y-1">
-                              <Label className="text-xs text-gray-600">房间ID</Label>
-                              <input
-                                type="text"
-                                className="w-full rounded-md border px-2 py-1.5 text-xs"
-                                value={appConfig.rtc.roomId || ""}
-                                onChange={(e) =>
-                                  dispatchRtcAction({
-                                    type: "BIND_KEY",
-                                    payload: { key: "rtc.roomId", value: e.target.value },
-                                  })
-                                }
-                                placeholder="Room123"
-                              />
-                            </div>
-                            <div className="space-y-1">
-                              <Label className="text-xs text-gray-600">用户ID</Label>
-                              <input
-                                type="text"
-                                className="w-full rounded-md border px-2 py-1.5 text-xs"
-                                value={appConfig.rtc.uid || ""}
-                                onChange={(e) =>
-                                  dispatchRtcAction({
-                                    type: "BIND_KEY",
-                                    payload: { key: "rtc.uid", value: e.target.value },
-                                  })
-                                }
-                                placeholder="User123"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* ASR/TTS 快速配置 */}
-                      <div className="space-y-3 border-t pt-3">
-                        <Label className="text-sm font-medium">语音服务</Label>
-                        <div className="space-y-2">
-                          <div className="space-y-1">
-                            <Label className="text-xs text-gray-600">ASR App ID</Label>
-                            <input
-                              type="text"
-                              className="w-full rounded-md border px-3 py-1.5 text-sm"
-                              value={appConfig.asr.appId || ""}
-                              onChange={(e) =>
-                                dispatchRtcAction({
-                                  type: "BIND_KEY",
-                                  payload: { key: "asr.appId", value: e.target.value },
-                                })
-                              }
-                              placeholder="ASR App ID"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-xs text-gray-600">TTS App ID</Label>
-                            <input
-                              type="text"
-                              className="w-full rounded-md border px-3 py-1.5 text-sm"
-                              value={appConfig.tts.appId || ""}
-                              onChange={(e) =>
-                                dispatchRtcAction({
-                                  type: "BIND_KEY",
-                                  payload: { key: "tts.appId", value: e.target.value },
-                                })
-                              }
-                              placeholder="TTS App ID"
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* LLM 快速配置 */}
-                      <div className="space-y-3 border-t pt-3">
-                        <Label className="text-sm font-medium">大模型配置</Label>
-                        <div className="space-y-2">
-                          <div className="space-y-1">
-                            <Label className="text-xs text-gray-600">Endpoint ID</Label>
-                            <input
-                              type="text"
-                              className="w-full rounded-md border px-3 py-1.5 text-sm"
-                              value={appConfig.llm.endpointId || ""}
-                              onChange={(e) =>
-                                dispatchRtcAction({
-                                  type: "BIND_KEY",
-                                  payload: { key: "llm.endpointId", value: e.target.value },
-                                })
-                              }
-                              placeholder="ep-xxxxx"
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      <Button onClick={() => setShowFullConfig(true)} variant="outline" className="w-full" size="sm">
-                        <Settings className="mr-2 h-3 w-3" />
-                        查看完整配置
-                      </Button>
-                    </CardContent>
-                  </Card>
+                  <QuickConfigPanel onShowFullConfig={() => setShowFullConfig(true)} />
                 </TabsContent>
 
-                {/* 调试面板 */}
                 <TabsContent value="debug" className="mt-0 space-y-4">
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base">模块测试</CardTitle>
-                      <CardDescription className="text-sm">测试各个服务模块的连接状态</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        {["rtc", "asr", "tts", "llm"].map((module) => {
-                          const result = testResults.find((t) => t.module === module)
-                          return (
-                            <div key={module} className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <div
-                                  className="h-2 w-2 rounded-full"
-                                  style={{
-                                    backgroundColor:
-                                      result?.status === "success"
-                                        ? "#10b981"
-                                        : result?.status === "error"
-                                          ? "#ef4444"
-                                          : result?.status === "testing"
-                                            ? "#f59e0b"
-                                            : "#d1d5db",
-                                  }}
-                                />
-                                <span className="text-sm font-medium uppercase">{module}</span>
-                              </div>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => runModuleTest(module)}
-                                disabled={result?.status === "testing"}
-                                className="h-7 px-2"
-                              >
-                                <Play className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          )
-                        })}
-                      </div>
+                  <DebugPanel 
+                    testResults={testResults}
+                    onRunModuleTest={runModuleTest}
+                  />
 
-                      {testResults.length > 0 && (
-                        <div className="mt-4 max-h-40 space-y-2 overflow-y-auto">
-                          <Label className="text-sm font-medium">测试结果</Label>
-                          {testResults.slice(-5).map((result, idx) => (
-                            <div key={idx} className="rounded bg-gray-50 p-2">
-                              <div className="flex items-center gap-1">
-                                {result.status === "success" && <CheckCircle className="h-3 w-3 text-green-500" />}
-                                {result.status === "error" && <AlertCircle className="h-3 w-3 text-red-500" />}
-                                <span className="text-xs font-medium">{result.module}</span>
-                              </div>
-                              <div className="text-xs text-gray-600">{result.message}</div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base">错误诊断</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <ErrorDiagnostics />
-                    </CardContent>
-                  </Card>
+                  <div className="p-4 rounded bg-white border">
+                    <ErrorDiagnostics />
+                  </div>
                 </TabsContent>
               </div>
             </Tabs>
@@ -871,171 +504,12 @@ console.log("Camera:", {isCameraEnabled, cameraStream, cameraError})
         </div>
       </div>
 
-      {/* 摄像头悬浮预览 */}
-      <AnimatePresence>
-        {((isCameraEnabled && cameraStream) || cameraError) && (
-          <motion.div
-            className={`fixed bottom-20 right-4 z-50 w-72 rounded-xl bg-white/95 backdrop-blur-md shadow-2xl border ${isSnapping ? 'border-blue-400/50 shadow-blue-200/50' : 'border-white/20'}`}
-            drag
-            dragMomentum={false}
-            dragElastic={0}
-            animate={controls}
-            initial={{ opacity: 0, scale: 0.8, y: 20 }}
-            exit={{ opacity: 0, scale: 0.8, y: 20 }}
-            style={{
-              ...((isCameraEnabled && cameraStream) || cameraError ? {
-                opacity: 1,
-                transform: 'translateY(0px) scale(1)'
-              } : {}),
-              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
-            }}
-            onDrag={(event, info) => {
-              const { x, y } = info.point
-              console.log("onDrag:", { x, y })
-              // const snapResult = snapToEdge(x, y)
-              
-              // // 只在接近边缘时设置isSnapping状态，不干扰位置
-              // if (snapResult.shouldSnap && !isSnapping) {
-              //   setIsSnapping(true)
-              // } else if (!snapResult.shouldSnap && isSnapping) {
-              //   setIsSnapping(false)
-              // }
-            }}
-            onDragEnd={async (event, info) => {
-              const { x, y } = info.point
-              console.log("onDragEnd:", { x, y })
-              const snapResult = snapToEdge(x, y)
-              
-              if (snapResult.shouldSnap) {
-                const animation = {
-                  x: snapResult.x - x,
-                  y: snapResult.y - y,
-                  scale: 1.05,
-                  transition: {
-                    type: "spring",
-                    stiffness: 400,
-                    damping: 25,
-                    duration: 0.3
-                  }
-                }
-                console.log("Animation:", animation)
-                setIsSnapping(true)
-                // 使用controls平滑移动到吸附位置
-                await controls.start(animation)
-                // 恢复正常大小
-                setTimeout(() => {
-                  setIsSnapping(false)
-                  controls.start({ scale: 1 })
-                }, 300)
-              } else {
-                setIsSnapping(false)
-              }
-            }}
-          >
-            <div className="flex items-center justify-between bg-gradient-to-r from-gray-50 to-gray-100 px-4 py-3 rounded-t-xl border-b border-gray-200/50 cursor-move backdrop-blur-sm">
-              <motion.div 
-                className="flex items-center gap-2"
-                initial={{ x: -10, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ delay: 0.1 }}
-              >
-                {cameraError ? (
-                  <motion.div
-                    animate={{ rotate: [0, -10, 10, 0] }}
-                    transition={{ duration: 0.5, repeat: Infinity, repeatDelay: 2 }}
-                  >
-                    <AlertCircle className="h-4 w-4 text-red-600" />
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    animate={{ scale: [1, 1.1, 1] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                  >
-                    <Camera className="h-5 w-5 text-green-600" />
-                  </motion.div>
-                )}
-                <span className="text-sm font-semibold text-gray-700">摄像头预览</span>
-              </motion.div>
-              <motion.div
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-              >
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleCameraToggle}
-                  className="h-7 w-7 p-0 hover:bg-red-50 hover:text-red-600 transition-colors rounded-full"
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-              </motion.div>
-            </div>
-            <motion.div 
-              className="p-3 bg-gradient-to-b from-gray-50/50 to-transparent"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.2 }}
-            >
-              {cameraError ? (
-                <motion.div 
-                  className="text-center py-4"
-                  initial={{ y: 10, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.3 }}
-                >
-                  <motion.div
-                    animate={{ y: [0, -5, 0] }}
-                    transition={{ duration: 1.5, repeat: Infinity }}
-                  >
-                    <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
-                  </motion.div>
-                  <p className="text-sm text-red-600 mb-3">{cameraError}</p>
-                  <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={handleCameraToggle}
-                      className="text-xs"
-                    >
-                      重试
-                    </Button>
-                  </motion.div>
-                </motion.div>
-              ) : (
-                <div className="relative">
-                  <motion.video
-                    ref={setVideoRef}
-                    className="w-full rounded-lg bg-black shadow-inner border border-gray-200/30"
-                    style={{ aspectRatio: "16/9" }}
-                    muted
-                    playsInline
-                    autoPlay
-                    initial={{ scale: 0.9, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ delay: 0.3, duration: 0.3 }}
-                  />
-                  <motion.div 
-                    className="absolute top-2 right-2 flex items-center gap-1.5 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 px-3 py-1.5 text-xs text-white shadow-lg backdrop-blur-sm"
-                    initial={{ scale: 0, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ delay: 0.5, type: "spring" }}
-                  >
-                    <motion.div 
-                      className="h-2 w-2 rounded-full bg-white"
-                      animate={{ opacity: [1, 0.3, 1] }}
-                      transition={{ duration: 1.5, repeat: Infinity }}
-                    />
-                    <span className="font-medium">LIVE</span>
-                  </motion.div>
-                </div>
-              )}
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <CameraPreview
+        isCameraEnabled={isCameraEnabled}
+        cameraStream={cameraStream}
+        cameraError={cameraError}
+        onCameraToggle={handleCameraToggle}
+      />
 
       {/* 快速设备控制栏 - 底部固定 */}
       <motion.div 
@@ -1055,68 +529,10 @@ console.log("Camera:", {isCameraEnabled, cameraStream, cameraError})
         />
       </motion.div>
 
-      {/* 完整配置模态框 */}
-      <AnimatePresence>
-        {showFullConfig && (
-          <motion.div 
-            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            onClick={(e) => {
-              if (e.target === e.currentTarget) {
-                setShowFullConfig(false)
-              }
-            }}
-          >
-            <div className="flex h-full items-center justify-center p-4">
-              <motion.div 
-                className="max-h-[90vh] w-full max-w-6xl overflow-hidden rounded-lg bg-white shadow-xl"
-                initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <motion.div 
-                  className="flex items-center justify-between border-b px-6 py-4"
-                  initial={{ y: -20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.1 }}
-                >
-                  <div>
-                    <h2 className="text-xl font-semibold">完整配置</h2>
-                    <p className="text-sm text-gray-600">火山引擎服务的详细配置参数</p>
-                  </div>
-                  <motion.div
-                    whileHover={{ scale: 1.1, rotate: 90 }}
-                    whileTap={{ scale: 0.9 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => setShowFullConfig(false)} 
-                      className="rounded-full"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </motion.div>
-                </motion.div>
-                <motion.div 
-                  className="max-h-[calc(90vh-80px)] overflow-y-auto p-6"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.2 }}
-                >
-                  <Config />
-                </motion.div>
-              </motion.div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <ConfigModal
+        isOpen={showFullConfig}
+        onClose={() => setShowFullConfig(false)}
+      />
     </div>
   )
 }
