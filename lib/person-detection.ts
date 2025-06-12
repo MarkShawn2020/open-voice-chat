@@ -164,8 +164,13 @@ export class PersonDetector {
       this.faceLandmarker = faceLandmarker
       this.handLandmarker = handLandmarker
 
+      // 恢复 console.error
+      console.error = originalError
+
       console.log('MediaPipe Tasks initialized successfully')
     } catch (error) {
+      // 恢复 console.error
+      console.error = originalError
       console.error('Failed to initialize MediaPipe Tasks:', error)
       this.callbacks.onError?.(error as Error)
     }
