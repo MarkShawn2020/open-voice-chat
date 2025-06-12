@@ -239,21 +239,25 @@ export const EnhancedPlayground: React.FC = () => {
   useEffect(() => {
     if ((isCameraEnabled && cameraStream) || cameraError) {
       console.log("Starting camera animation", { isCameraEnabled, cameraStream, cameraError })
-      controls.start({ 
-        opacity: 1, 
-        scale: 1, 
-        y: 0,
-        transition: { 
-          type: "spring", 
-          stiffness: 300, 
-          damping: 30,
-          duration: 0.2 
-        }
-      }).then(() => {
-        console.log("Camera animation completed")
-      }).catch((error) => {
-        console.error("Camera animation failed:", error)
-      })
+      // 延迟一帧确保DOM已渲染
+      setTimeout(() => {
+        controls.start({ 
+          opacity: 1, 
+          scale: 1, 
+          y: 0,
+          x: 0,
+          transition: { 
+            type: "spring", 
+            stiffness: 300, 
+            damping: 30,
+            duration: 0.2 
+          }
+        }).then(() => {
+          console.log("Camera show animation completed")
+        }).catch((err) => {
+          console.error("Camera show animation failed:", err)
+        })
+      }, 10)
     }
   }, [isCameraEnabled, cameraStream, cameraError, controls])
 
@@ -412,7 +416,9 @@ export const EnhancedPlayground: React.FC = () => {
       shouldSnap = true
     }
     
-    return { x: snapX, y: snapY, shouldSnap }
+    const snapResult = { x, snapX, y, snapY, shouldSnap, windowWidth, windowHeight }
+    console.log("Snap result:", snapResult)
+    return snapResult
   }
 
 console.log("Camera:", {isCameraEnabled, cameraStream, cameraError})
@@ -869,61 +875,60 @@ console.log("Camera:", {isCameraEnabled, cameraStream, cameraError})
       <AnimatePresence>
         {((isCameraEnabled && cameraStream) || cameraError) && (
           <motion.div
-            className={`fixed bottom-20 right-4 z-50 w-72 rounded-xl bg-white/95 backdrop-blur-md shadow-2xl border transition-all duration-200 ${isSnapping ? 'border-blue-400/50 shadow-blue-200/50' : 'border-white/20'}`}
+            className={`fixed bottom-20 right-4 z-50 w-72 rounded-xl bg-white/95 backdrop-blur-md shadow-2xl border ${isSnapping ? 'border-blue-400/50 shadow-blue-200/50' : 'border-white/20'}`}
             drag
-            dragConstraints={dragConstraints}
             dragMomentum={false}
-            dragElastic={0.1}
-            whileDrag={{ 
-              scale: 1.05, 
-              rotate: 1
-            }}
+            dragElastic={0}
+            animate={controls}
+            initial={{ opacity: 0, scale: 0.8, y: 20 }}
+            exit={{ opacity: 0, scale: 0.8, y: 20 }}
             style={{
+              ...((isCameraEnabled && cameraStream) || cameraError ? {
+                opacity: 1,
+                transform: 'translateY(0px) scale(1)'
+              } : {}),
               boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
             }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            initial={{ opacity: 0, scale: 0.8, y: 20 }}
-            transition={{ 
-              type: "spring", 
-              stiffness: 300, 
-              damping: 30,
-              duration: 0.2 
-            }}
-            exit={{ opacity: 0, scale: 0.8, y: 20 }}
             onDrag={(event, info) => {
               const { x, y } = info.point
-              const snapResult = snapToEdge(x, y)
+              console.log("onDrag:", { x, y })
+              // const snapResult = snapToEdge(x, y)
               
-              if (snapResult.shouldSnap && !isSnapping) {
-                setIsSnapping(true)
-                controls.start({ scale: 1.08 })
-                setTimeout(() => {
-                  setIsSnapping(false)
-                  controls.start({ scale: 1 })
-                }, 400)
-              }
+              // // 只在接近边缘时设置isSnapping状态，不干扰位置
+              // if (snapResult.shouldSnap && !isSnapping) {
+              //   setIsSnapping(true)
+              // } else if (!snapResult.shouldSnap && isSnapping) {
+              //   setIsSnapping(false)
+              // }
             }}
             onDragEnd={async (event, info) => {
               const { x, y } = info.point
+              console.log("onDragEnd:", { x, y })
               const snapResult = snapToEdge(x, y)
               
               if (snapResult.shouldSnap) {
-                setIsSnapping(true)
-                // 使用controls来平滑移动到吸附位置
-                await controls.start({ 
-                  x: snapResult.x, 
-                  y: snapResult.y,
-                  scale: 1.08,
-                  transition: { 
-                    type: "spring", 
-                    stiffness: 400, 
-                    damping: 30 
+                const animation = {
+                  x: snapResult.x - x,
+                  y: snapResult.y - y,
+                  scale: 1.05,
+                  transition: {
+                    type: "spring",
+                    stiffness: 400,
+                    damping: 25,
+                    duration: 0.3
                   }
-                })
+                }
+                console.log("Animation:", animation)
+                setIsSnapping(true)
+                // 使用controls平滑移动到吸附位置
+                await controls.start(animation)
+                // 恢复正常大小
                 setTimeout(() => {
                   setIsSnapping(false)
                   controls.start({ scale: 1 })
-                }, 400)
+                }, 300)
+              } else {
+                setIsSnapping(false)
               }
             }}
           >
