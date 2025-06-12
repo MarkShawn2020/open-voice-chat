@@ -212,11 +212,12 @@ export const rtcActionsAtom = atom(null, (get: Getter, set: Setter, action: RTCA
                 error: null,
               }))
             } else {
-              console.error("停止 AI 语音聊天失败:", result.error)
+              const errorMessage = "停止智能体失败"
+              console.error("停止 AI 语音聊天失败:", errorMessage)
               set(voiceChatStateAtom, (prev) => ({
                 ...prev,
                 isStopping: false,
-                error: result.error || "停止智能体失败",
+                error: errorMessage,
               }))
             }
           })

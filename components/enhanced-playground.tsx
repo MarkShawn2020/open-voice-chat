@@ -5,7 +5,7 @@ import { DebugMonitor } from "@/components/debug-monitor"
 import { ErrorDiagnostics } from "@/components/error-diagnostics"
 import { ModuleTester } from "@/components/module-tester"
 import { PersonDetection } from "@/components/person-detection"
-import { PersonDetectionCard } from "@/components/person-detection/person-detection-card"
+import { PersonDetectionCard, type SystemState, type EventLog } from "@/components/person-detection/person-detection-card"
 import { AIControlPanel } from "@/components/playground/ai-control-panel"
 import { CameraPreview } from "@/components/playground/camera-preview"
 import { ConfigModal } from "@/components/playground/config-modal"
@@ -94,6 +94,11 @@ export const EnhancedPlayground: React.FC = () => {
 
   // 人员检测状态
   const [isPersonDetectionEnabled, setIsPersonDetectionEnabled] = useState(false)
+  const [detectionResult, setDetectionResult] = useState<any>(null)
+  
+  // 系统状态和事件日志
+  const [systemState, setSystemState] = useState<SystemState>("waiting")
+  const [eventLogs, setEventLogs] = useState<EventLog[]>([])
 
   // 当前选择的摄像头设备ID
   const [selectedCameraId, setSelectedCameraId] = useState<string>("")
@@ -133,6 +138,18 @@ export const EnhancedPlayground: React.FC = () => {
   const addDebugLog = (message: string) => {
     const timestamp = new Date().toLocaleTimeString()
     setDebugLogs((prev) => [...prev.slice(-49), `[${timestamp}] ${message}`])
+  }
+
+  // 添加事件日志
+  const addEventLog = (type: EventLog["type"], message: string, severity: EventLog["severity"] = "info") => {
+    const newLog: EventLog = {
+      id: Date.now().toString(),
+      timestamp: Date.now(),
+      type,
+      message,
+      severity
+    }
+    setEventLogs((prev) => [...prev.slice(-29), newLog]) // 保留最近30条
   }
 
   // 运行模块测试
@@ -257,8 +274,33 @@ export const EnhancedPlayground: React.FC = () => {
     if (config && !rtcState.engine) {
       dispatchRtcAction({ type: "INITIALIZE_ENGINE" })
       addDebugLog("初始化RTC引擎")
+      setSystemState("starting")
+      addEventLog("state_changed", "系统开始启动", "info")
     }
   }, [config, rtcState.engine, dispatchRtcAction])
+
+  // 系统状态管理
+  useEffect(() => {
+    if (rtcState.engine && !rtcState.isConnected && systemState === "starting") {
+      setSystemState("idle")
+      addEventLog("state_changed", "系统进入空闲状态", "success")
+    }
+    
+    if (rtcState.isConnected && voiceChatState.isAgentActive) {
+      if (detectionResult && detectionResult.persons && detectionResult.persons.some((p: any) => p.state.isInteracting)) {
+        setSystemState("interacting")
+        addEventLog("state_changed", "开始与用户交互", "success")
+      } else if (detectionResult && detectionResult.persons && detectionResult.persons.some((p: any) => p.state.isLookingAtCamera)) {
+        setSystemState("welcome")
+        addEventLog("state_changed", "检测到用户注意，准备欢迎", "info")
+      } else if (detectionResult && detectionResult.totalCount > 0) {
+        setSystemState("appealing")
+        addEventLog("state_changed", "检测到用户，尝试吸引注意", "info")
+      } else {
+        setSystemState("idle")
+      }
+    }
+  }, [rtcState.isConnected, rtcState.engine, voiceChatState.isAgentActive, detectionResult, systemState])
 
   // 监听状态变化添加日志
   useEffect(() => {
@@ -449,10 +491,49 @@ export const EnhancedPlayground: React.FC = () => {
   // 人员检测回调
   const handlePersonEntered = (personId: string) => {
     addDebugLog(`新人员进入: ${personId}`)
+    addEventLog("person_detected", `新人员进入: ${personId.slice(-4)}`, "success")
+    
+    // 如果系统空闲且AI已启动，切换到吸引状态
+    if (systemState === "idle" && voiceChatState.isAgentActive) {
+      setSystemState("appealing")
+      addEventLog("state_changed", "检测到用户，开始吸引注意", "info")
+    }
   }
 
   const handlePersonLeft = (personId: string) => {
     addDebugLog(`人员离开: ${personId}`)
+    addEventLog("person_left", `人员离开: ${personId.slice(-4)}`, "warning")
+    
+    // 如果没有其他人了，切换到告别状态
+    if (detectionResult && detectionResult.totalCount <= 1) {
+      setSystemState("goodbye")
+      addEventLog("state_changed", "用户离开，进入告别状态", "warning")
+      
+      // 3秒后回到空闲状态
+      setTimeout(() => {
+        setSystemState("idle")
+        addEventLog("state_changed", "回到空闲状态", "info")
+      }, 3000)
+    }
+  }
+
+  // 人员检测结果更新
+  const handleDetectionResult = (result: any) => {
+    setDetectionResult(result)
+    
+    // 检测注意力变化
+    if (result && result.persons) {
+      const lookingCount = result.persons.filter((p: any) => p.state.isLookingAtCamera).length
+      const interactingCount = result.persons.filter((p: any) => p.state.isInteracting).length
+      
+      if (lookingCount > 0 && systemState === "appealing") {
+        addEventLog("attention_gained", `${lookingCount}人开始注意摄像头`, "success")
+      }
+      
+      if (interactingCount > 0 && systemState !== "interacting") {
+        addEventLog("interaction_started", `${interactingCount}人开始交互`, "success")
+      }
+    }
   }
 
   // 人员检测配置更新
@@ -592,7 +673,11 @@ export const EnhancedPlayground: React.FC = () => {
               <div className="h-full space-y-4">
                 <DebugMonitor />
 
-                <PersonDetectionCard detectionResult={} systemState={} eventLogs={}/>
+                <PersonDetectionCard 
+                  detectionResult={detectionResult}
+                  systemState={systemState}
+                  eventLogs={eventLogs}
+                />
               </div>
             </div>
           </div>
@@ -617,6 +702,7 @@ export const EnhancedPlayground: React.FC = () => {
             showPanel={false}
             onPersonEntered={handlePersonEntered}
             onPersonLeft={handlePersonLeft}
+            onDetectionUpdate={handleDetectionResult}
           />
         )}
       </div>

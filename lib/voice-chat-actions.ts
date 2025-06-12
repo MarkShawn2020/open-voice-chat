@@ -34,9 +34,12 @@ function createHMACSignature(
     crypto.createHash('sha256').update(body).digest('hex')
   ].join('\n')
   
-  const stringToSign = `AWS4-HMAC-SHA256\n${headers['X-Date']}\n${headers['X-Date'].slice(0, 8)}/cn-north-1/rtc/aws4_request\n${crypto.createHash('sha256').update(canonicalRequest).digest('hex')}`
+  const xDate = headers['X-Date']
+  if (!xDate) throw new Error('X-Date header is required')
   
-  const kDate = crypto.createHmac('sha256', `AWS4${secretKey}`).update(headers['X-Date'].slice(0, 8)).digest()
+  const stringToSign = `AWS4-HMAC-SHA256\n${xDate}\n${xDate.slice(0, 8)}/cn-north-1/rtc/aws4_request\n${crypto.createHash('sha256').update(canonicalRequest).digest('hex')}`
+  
+  const kDate = crypto.createHmac('sha256', `AWS4${secretKey}`).update(xDate.slice(0, 8)).digest()
   const kRegion = crypto.createHmac('sha256', kDate).update('cn-north-1').digest()
   const kService = crypto.createHmac('sha256', kRegion).update('rtc').digest()
   const kSigning = crypto.createHmac('sha256', kService).update('aws4_request').digest()
@@ -117,7 +120,7 @@ async function createAuthHeaders(action: string, version: string, body: Record<s
     body,
   }
 
-  const Signer = await getSigner()
+  const { Signer } = await import('@volcengine/openapi')
   const signer = new Signer(openApiRequestData, 'rtc')
   signer.addAuthorization({
     accessKeyId: accessKey,
