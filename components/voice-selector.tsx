@@ -54,7 +54,7 @@ export const VoiceSelector: React.FC<VoiceSelectorProps> = ({ value, onChange, t
     const loadVoices = async () => {
       try {
         const response = await fetch("/data/preset-voices.json")
-        const data = await response.json()
+        const data = await response.json() as VoiceItem[]
         setVoices(data)
         setFilteredVoices(data)
       } catch (error) {
@@ -101,7 +101,7 @@ export const VoiceSelector: React.FC<VoiceSelectorProps> = ({ value, onChange, t
   }, [voices])
 
   // 生成自定义文字的TTS音频
-  const generateCustomTTS = async (voiceType: string, text: string) => {
+  const generateCustomTTS = async (voiceType: string, text: string): Promise<string | null> => {
     if (!ttsConfig?.appId || !ttsConfig?.accessToken) {
       console.error("TTS config not provided")
       return null
@@ -171,7 +171,7 @@ export const VoiceSelector: React.FC<VoiceSelectorProps> = ({ value, onChange, t
 
         // 如果没有缓存，生成新的音频
         if (!customAudioUrl) {
-          customAudioUrl = await generateCustomTTS(voiceType, customTextToUse)
+          customAudioUrl = await generateCustomTTS(voiceType, customTextToUse) || undefined
         }
 
         if (customAudioUrl) {

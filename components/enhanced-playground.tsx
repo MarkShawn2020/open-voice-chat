@@ -21,7 +21,7 @@ import { rtcActionsAtom } from "@/store/rtc-actions"
 import { rtcConfigAtom } from "@/store/rtc-config"
 import { rtcStateAtom } from "@/store/rtc-state"
 import { voiceChatStateAtom } from "@/store/voice-chat-state"
-import { AnimatePresence, motion } from "framer-motion"
+import { AnimatePresence, motion, useMotionValue, useAnimation } from "framer-motion"
 import { useAtom } from "jotai"
 import {
   AlertCircle,
@@ -122,6 +122,8 @@ export const EnhancedPlayground: React.FC = () => {
     right: 0,
     bottom: 0,
   })
+  const [isSnapping, setIsSnapping] = useState(false)
+  const controls = useAnimation()
 
   // AI配置
   const [aiConfig, setAiConfig] = useState({
@@ -233,6 +235,28 @@ export const EnhancedPlayground: React.FC = () => {
     }
   }, [rtcState.isConnected, rtcState.error])
 
+  // 摄像头显示时启动动画
+  useEffect(() => {
+    if ((isCameraEnabled && cameraStream) || cameraError) {
+      console.log("Starting camera animation", { isCameraEnabled, cameraStream, cameraError })
+      controls.start({ 
+        opacity: 1, 
+        scale: 1, 
+        y: 0,
+        transition: { 
+          type: "spring", 
+          stiffness: 300, 
+          damping: 30,
+          duration: 0.2 
+        }
+      }).then(() => {
+        console.log("Camera animation completed")
+      }).catch((error) => {
+        console.error("Camera animation failed:", error)
+      })
+    }
+  }, [isCameraEnabled, cameraStream, cameraError, controls])
+
   useEffect(() => {
     if (voiceChatState.isAgentActive) {
       addDebugLog("AI智能体启动")
@@ -302,6 +326,9 @@ export const EnhancedPlayground: React.FC = () => {
 
   // 切换摄像头
   const handleCameraToggle = async () => {
+    console.log("Camera toggle clicked", { isCameraEnabled, cameraStream, cameraError })
+    addDebugLog(`摄像头切换: 当前状态 ${isCameraEnabled ? "开启" : "关闭"}`)
+    
     if (isCameraEnabled) {
       // 关闭摄像头
       if (cameraStream) {
@@ -314,10 +341,12 @@ export const EnhancedPlayground: React.FC = () => {
     } else {
       // 开启摄像头
       setCameraError(null)
+      addDebugLog("尝试开启摄像头...")
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { width: 640, height: 480 },
         })
+        console.log("Camera stream obtained:", stream)
         setCameraStream(stream)
         setIsCameraEnabled(true)
         addDebugLog("摄像头开启成功")
@@ -349,6 +378,44 @@ export const EnhancedPlayground: React.FC = () => {
     setIsSpeakerEnabled(!isSpeakerEnabled)
     addDebugLog(`扬声器${isSpeakerEnabled ? "关闭" : "开启"}`)
   }
+
+  // 磁吸边缘效果
+  const snapToEdge = (x: number, y: number) => {
+    if (typeof window === 'undefined') return { x, y }
+    
+    const windowWidth = window.innerWidth
+    const windowHeight = window.innerHeight
+    const elementWidth = 256 // w-64 = 256px
+    const elementHeight = 300 // 大约高度
+    const snapThreshold = 50 // 距离边缘50px时触发磁吸
+    const edgeMargin = 16 // 距离边缘16px
+    
+    let snapX = x
+    let snapY = y
+    let shouldSnap = false
+    
+    // 检查左右边缘
+    if (x <= snapThreshold) {
+      snapX = -windowWidth + elementWidth + edgeMargin
+      shouldSnap = true
+    } else if (x >= windowWidth - elementWidth - snapThreshold) {
+      snapX = windowWidth - elementWidth - edgeMargin
+      shouldSnap = true
+    }
+    
+    // 检查上下边缘
+    if (y <= snapThreshold) {
+      snapY = -windowHeight + elementHeight + edgeMargin + 80 // 保留顶部空间
+      shouldSnap = true
+    } else if (y >= windowHeight - elementHeight - snapThreshold - 80) {
+      snapY = windowHeight - elementHeight - edgeMargin - 80 // 保留底部控制栏空间
+      shouldSnap = true
+    }
+    
+    return { x: snapX, y: snapY, shouldSnap }
+  }
+
+console.log("Camera:", {isCameraEnabled, cameraStream, cameraError})
 
   // 防止服务端渲染不匹配
   if (!isClient) {
@@ -802,23 +869,65 @@ export const EnhancedPlayground: React.FC = () => {
       <AnimatePresence>
         {((isCameraEnabled && cameraStream) || cameraError) && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.8, y: 20 }}
+            className={`fixed bottom-20 right-4 z-50 w-72 rounded-xl bg-white/95 backdrop-blur-md shadow-2xl border transition-all duration-200 ${isSnapping ? 'border-blue-400/50 shadow-blue-200/50' : 'border-white/20'}`}
+            drag
+            dragConstraints={dragConstraints}
+            dragMomentum={false}
+            dragElastic={0.1}
+            whileDrag={{ 
+              scale: 1.05, 
+              rotate: 1
+            }}
+            style={{
+              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
+            }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.8, y: 20 }}
+            initial={{ opacity: 0, scale: 0.8, y: 20 }}
             transition={{ 
               type: "spring", 
               stiffness: 300, 
               damping: 30,
               duration: 0.2 
             }}
-            className="fixed bottom-20 right-4 z-50 w-64 rounded-lg bg-white shadow-2xl border"
-            drag
-            dragConstraints={dragConstraints}
-            dragMomentum={false}
-            dragElastic={0.1}
-            whileDrag={{ scale: 1.02, rotate: 2 }}
+            exit={{ opacity: 0, scale: 0.8, y: 20 }}
+            onDrag={(event, info) => {
+              const { x, y } = info.point
+              const snapResult = snapToEdge(x, y)
+              
+              if (snapResult.shouldSnap && !isSnapping) {
+                setIsSnapping(true)
+                controls.start({ scale: 1.08 })
+                setTimeout(() => {
+                  setIsSnapping(false)
+                  controls.start({ scale: 1 })
+                }, 400)
+              }
+            }}
+            onDragEnd={async (event, info) => {
+              const { x, y } = info.point
+              const snapResult = snapToEdge(x, y)
+              
+              if (snapResult.shouldSnap) {
+                setIsSnapping(true)
+                // 使用controls来平滑移动到吸附位置
+                await controls.start({ 
+                  x: snapResult.x, 
+                  y: snapResult.y,
+                  scale: 1.08,
+                  transition: { 
+                    type: "spring", 
+                    stiffness: 400, 
+                    damping: 30 
+                  }
+                })
+                setTimeout(() => {
+                  setIsSnapping(false)
+                  controls.start({ scale: 1 })
+                }, 400)
+              }
+            }}
           >
-            <div className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-t-lg border-b cursor-move">
+            <div className="flex items-center justify-between bg-gradient-to-r from-gray-50 to-gray-100 px-4 py-3 rounded-t-xl border-b border-gray-200/50 cursor-move backdrop-blur-sm">
               <motion.div 
                 className="flex items-center gap-2"
                 initial={{ x: -10, opacity: 0 }}
@@ -837,10 +946,10 @@ export const EnhancedPlayground: React.FC = () => {
                     animate={{ scale: [1, 1.1, 1] }}
                     transition={{ duration: 2, repeat: Infinity }}
                   >
-                    <Camera className="h-4 w-4 text-green-600" />
+                    <Camera className="h-5 w-5 text-green-600" />
                   </motion.div>
                 )}
-                <span className="text-sm font-medium">摄像头</span>
+                <span className="text-sm font-semibold text-gray-700">摄像头预览</span>
               </motion.div>
               <motion.div
                 whileHover={{ scale: 1.1 }}
@@ -850,14 +959,14 @@ export const EnhancedPlayground: React.FC = () => {
                   variant="ghost"
                   size="sm"
                   onClick={handleCameraToggle}
-                  className="h-6 w-6 p-0 hover:bg-gray-200"
+                  className="h-7 w-7 p-0 hover:bg-red-50 hover:text-red-600 transition-colors rounded-full"
                 >
                   <X className="h-3 w-3" />
                 </Button>
               </motion.div>
             </div>
             <motion.div 
-              className="p-2"
+              className="p-3 bg-gradient-to-b from-gray-50/50 to-transparent"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.2 }}
@@ -894,8 +1003,8 @@ export const EnhancedPlayground: React.FC = () => {
                 <div className="relative">
                   <motion.video
                     ref={setVideoRef}
-                    className="w-full rounded bg-black"
-                    style={{ aspectRatio: "4/3" }}
+                    className="w-full rounded-lg bg-black shadow-inner border border-gray-200/30"
+                    style={{ aspectRatio: "16/9" }}
                     muted
                     playsInline
                     autoPlay
@@ -904,17 +1013,17 @@ export const EnhancedPlayground: React.FC = () => {
                     transition={{ delay: 0.3, duration: 0.3 }}
                   />
                   <motion.div 
-                    className="absolute top-1 right-1 flex items-center gap-1 rounded-full bg-green-500 px-2 py-1 text-xs text-white"
+                    className="absolute top-2 right-2 flex items-center gap-1.5 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 px-3 py-1.5 text-xs text-white shadow-lg backdrop-blur-sm"
                     initial={{ scale: 0, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ delay: 0.5, type: "spring" }}
                   >
                     <motion.div 
-                      className="h-1.5 w-1.5 rounded-full bg-white"
+                      className="h-2 w-2 rounded-full bg-white"
                       animate={{ opacity: [1, 0.3, 1] }}
                       transition={{ duration: 1.5, repeat: Infinity }}
                     />
-                    <span>录制中</span>
+                    <span className="font-medium">LIVE</span>
                   </motion.div>
                 </div>
               )}

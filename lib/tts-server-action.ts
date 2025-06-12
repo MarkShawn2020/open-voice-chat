@@ -66,7 +66,7 @@ export async function generateTTSSpeech(request: TTSRequest): Promise<TTSRespons
       throw new Error(`HTTP error! status: ${response.status}`)
     }
 
-    const data = await response.json()
+    const data = await response.json() as { code: number; data?: string; message?: string }
     
     if (data.code === 3000 && data.data) {
       // 返回base64编码的音频数据

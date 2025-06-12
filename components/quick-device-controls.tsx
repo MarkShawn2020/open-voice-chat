@@ -95,10 +95,10 @@ export const QuickDeviceControls: React.FC<QuickDeviceControlsProps> = ({
 
         // 设置默认选择
         if (speakers.length > 0 && !selectedSpeaker) {
-          setSelectedSpeaker(speakers[0].deviceId)
+          setSelectedSpeaker(speakers[0]?.deviceId || '')
         }
         if (cameras.length > 0 && !selectedCamera) {
-          setSelectedCamera(cameras[0].deviceId)
+          setSelectedCamera(cameras[0]?.deviceId || '')
         }
       } catch (error) {
         console.error('Failed to get devices:', error)
