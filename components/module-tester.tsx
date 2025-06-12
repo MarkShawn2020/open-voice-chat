@@ -319,7 +319,7 @@ export const ModuleTester: React.FC = () => {
   if (!isClient) {
     return (
       <Card className="border-0 shadow-lg bg-white/90 backdrop-blur-sm">
-        <CardHeader className="pb-3">
+        <CardHeader className="">
           <CardTitle className="text-lg">模块测试</CardTitle>
           <CardDescription>正在加载...</CardDescription>
         </CardHeader>
@@ -329,21 +329,8 @@ export const ModuleTester: React.FC = () => {
 
   return (
     <Card className="border-0 shadow-lg bg-white/90 backdrop-blur-sm">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-lg">模块测试</CardTitle>
-            <CardDescription>独立测试各个服务模块的连接性</CardDescription>
-          </div>
-          <Button 
-            size="sm" 
-            onClick={runAllTests}
-            disabled={tests.some(t => t.isRunning)}
-          >
-            <Play className="mr-2 h-3 w-3" />
-            全部测试
-          </Button>
-        </div>
+      <CardHeader className="">
+        <CardTitle className="text-base">模块测试器</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {tests.map(test => (

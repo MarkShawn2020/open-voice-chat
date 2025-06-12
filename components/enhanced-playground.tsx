@@ -40,7 +40,7 @@ import {
   Users,
   Wifi,
   WifiOff,
-  X
+  X,
 } from "lucide-react"
 import React, { useEffect, useState } from "react"
 import { toast } from "sonner"
@@ -60,7 +60,7 @@ export const EnhancedPlayground: React.FC = () => {
   const [voiceChatState] = useAtom(voiceChatStateAtom)
   const [, dispatchRtcAction] = useAtom(rtcActionsAtom)
   const [isClient, setIsClient] = useState(false)
-  
+
   // 获取麦克风状态
   const { curMicState } = useMicStore()
   const { toggleMic } = useMicActions()
@@ -88,6 +88,7 @@ export const EnhancedPlayground: React.FC = () => {
   const [isCameraEnabled, setIsCameraEnabled] = useState(false)
   const [isSpeakerEnabled, setIsSpeakerEnabled] = useState(true)
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null)
+  const [cameraError, setCameraError] = useState<string | null>(null)
 
   // AI配置
   const [aiConfig, setAiConfig] = useState({
@@ -212,7 +213,7 @@ export const EnhancedPlayground: React.FC = () => {
   useEffect(() => {
     return () => {
       if (cameraStream) {
-        cameraStream.getTracks().forEach(track => track.stop())
+        cameraStream.getTracks().forEach((track) => track.stop())
       }
     }
   }, [cameraStream])
@@ -261,22 +262,40 @@ export const EnhancedPlayground: React.FC = () => {
     if (isCameraEnabled) {
       // 关闭摄像头
       if (cameraStream) {
-        cameraStream.getTracks().forEach(track => track.stop())
+        cameraStream.getTracks().forEach((track) => track.stop())
         setCameraStream(null)
       }
       setIsCameraEnabled(false)
+      setCameraError(null)
       addDebugLog("摄像头关闭")
     } else {
       // 开启摄像头
+      setCameraError(null)
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ 
-          video: { width: 640, height: 480 } 
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { width: 640, height: 480 },
         })
         setCameraStream(stream)
         setIsCameraEnabled(true)
-        addDebugLog("摄像头开启")
+        addDebugLog("摄像头开启成功")
+        toast.success("摄像头已开启")
       } catch (error) {
-        addDebugLog(`摄像头启动失败: ${error}`)
+        const errorMessage = error instanceof Error ? error.message : "未知错误"
+        let userMessage = "摄像头启动失败"
+
+        if (error instanceof Error) {
+          if (error.name === "NotAllowedError") {
+            userMessage = "摄像头权限被拒绝，请在浏览器设置中允许摄像头访问"
+          } else if (error.name === "NotFoundError") {
+            userMessage = "未找到摄像头设备"
+          } else if (error.name === "NotReadableError") {
+            userMessage = "摄像头正在被其他应用使用"
+          }
+        }
+
+        setCameraError(userMessage)
+        addDebugLog(`摄像头启动失败: ${errorMessage}`)
+        toast.error(userMessage)
         console.error("Camera access failed:", error)
       }
     }
@@ -332,7 +351,7 @@ export const EnhancedPlayground: React.FC = () => {
                   <Users className="h-4 w-4 text-blue-500" />
                   <span className="text-blue-600">{rtcState.remoteUsers.length} 用户在线</span>
                 </div>
-                
+
                 {/* 设备状态显示 */}
                 <div className="hidden lg:block">
                   <DeviceStatus
@@ -346,10 +365,9 @@ export const EnhancedPlayground: React.FC = () => {
                 </div>
               </div>
             </div>
-            
+
             {/* 主要操作按钮 */}
             <div className="flex items-center gap-2">
-              
               {!rtcState.isConnected ? (
                 <Button onClick={handleJoinRoom} disabled={!config} size="sm">
                   <Phone className="mr-2 h-4 w-4" />
@@ -363,19 +381,11 @@ export const EnhancedPlayground: React.FC = () => {
                     size="sm"
                     disabled={!curMicState.isPermissionGranted}
                   >
-                    {curMicState.isOn ? (
-                      <Mic className="mr-1 h-3 w-3" />
-                    ) : (
-                      <MicOff className="mr-1 h-3 w-3" />
-                    )}
+                    {curMicState.isOn ? <Mic className="mr-1 h-3 w-3" /> : <MicOff className="mr-1 h-3 w-3" />}
                     麦克风
                   </Button>
                   {!voiceChatState.isAgentActive ? (
-                    <Button
-                      onClick={handleStartVoiceChat}
-                      disabled={voiceChatState.isStarting}
-                      size="sm"
-                    >
+                    <Button onClick={handleStartVoiceChat} disabled={voiceChatState.isStarting} size="sm">
                       <Bot className="mr-2 h-4 w-4" />
                       {voiceChatState.isStarting ? "启动中..." : "启动AI"}
                     </Button>
@@ -398,7 +408,7 @@ export const EnhancedPlayground: React.FC = () => {
               )}
             </div>
           </div>
-          
+
           {/* 错误提示 */}
           {(rtcState.error || voiceChatState.error) && (
             <Alert variant="destructive" className="mt-3">
@@ -474,7 +484,7 @@ export const EnhancedPlayground: React.FC = () => {
                           <span>创造性</span>
                         </div>
                       </div>
-                      
+
                       <div className="space-y-2">
                         <Label className="text-sm font-medium">AI音色</Label>
                         <VoiceSelector
@@ -485,7 +495,7 @@ export const EnhancedPlayground: React.FC = () => {
                           }}
                           ttsConfig={{
                             appId: appConfig.tts.appId,
-                            accessToken: appConfig.tts.accessToken
+                            accessToken: appConfig.tts.accessToken,
                           }}
                         />
                       </div>
@@ -514,21 +524,21 @@ export const EnhancedPlayground: React.FC = () => {
                           </SelectContent>
                         </Select>
                       </div>
-                      
+
                       <div className="space-y-2">
                         <Label className="text-sm font-medium">TTS音色</Label>
                         <VoiceSelector
                           value={appConfig.tts.voiceType}
-                          onChange={(voiceType) => 
+                          onChange={(voiceType) =>
                             dispatchRtcAction({ type: "BIND_KEY", payload: { key: "tts.voiceType", value: voiceType } })
                           }
                           ttsConfig={{
                             appId: appConfig.tts.appId,
-                            accessToken: appConfig.tts.accessToken
+                            accessToken: appConfig.tts.accessToken,
                           }}
                         />
                       </div>
-                      
+
                       <Button onClick={applyQuickConfig} className="w-full" size="sm">
                         <RefreshCw className="mr-2 h-3 w-3" />
                         应用配置
@@ -555,7 +565,12 @@ export const EnhancedPlayground: React.FC = () => {
                               type="text"
                               className="w-full rounded-md border px-3 py-1.5 text-sm"
                               value={appConfig.rtc.appId || ""}
-                              onChange={(e) => dispatchRtcAction({ type: "BIND_KEY", payload: { key: "rtc.appId", value: e.target.value } })}
+                              onChange={(e) =>
+                                dispatchRtcAction({
+                                  type: "BIND_KEY",
+                                  payload: { key: "rtc.appId", value: e.target.value },
+                                })
+                              }
                               placeholder="RTC App ID"
                             />
                           </div>
@@ -566,7 +581,12 @@ export const EnhancedPlayground: React.FC = () => {
                                 type="text"
                                 className="w-full rounded-md border px-2 py-1.5 text-xs"
                                 value={appConfig.rtc.roomId || ""}
-                                onChange={(e) => dispatchRtcAction({ type: "BIND_KEY", payload: { key: "rtc.roomId", value: e.target.value } })}
+                                onChange={(e) =>
+                                  dispatchRtcAction({
+                                    type: "BIND_KEY",
+                                    payload: { key: "rtc.roomId", value: e.target.value },
+                                  })
+                                }
                                 placeholder="Room123"
                               />
                             </div>
@@ -576,7 +596,12 @@ export const EnhancedPlayground: React.FC = () => {
                                 type="text"
                                 className="w-full rounded-md border px-2 py-1.5 text-xs"
                                 value={appConfig.rtc.uid || ""}
-                                onChange={(e) => dispatchRtcAction({ type: "BIND_KEY", payload: { key: "rtc.uid", value: e.target.value } })}
+                                onChange={(e) =>
+                                  dispatchRtcAction({
+                                    type: "BIND_KEY",
+                                    payload: { key: "rtc.uid", value: e.target.value },
+                                  })
+                                }
                                 placeholder="User123"
                               />
                             </div>
@@ -594,7 +619,12 @@ export const EnhancedPlayground: React.FC = () => {
                               type="text"
                               className="w-full rounded-md border px-3 py-1.5 text-sm"
                               value={appConfig.asr.appId || ""}
-                              onChange={(e) => dispatchRtcAction({ type: "BIND_KEY", payload: { key: "asr.appId", value: e.target.value } })}
+                              onChange={(e) =>
+                                dispatchRtcAction({
+                                  type: "BIND_KEY",
+                                  payload: { key: "asr.appId", value: e.target.value },
+                                })
+                              }
                               placeholder="ASR App ID"
                             />
                           </div>
@@ -604,7 +634,12 @@ export const EnhancedPlayground: React.FC = () => {
                               type="text"
                               className="w-full rounded-md border px-3 py-1.5 text-sm"
                               value={appConfig.tts.appId || ""}
-                              onChange={(e) => dispatchRtcAction({ type: "BIND_KEY", payload: { key: "tts.appId", value: e.target.value } })}
+                              onChange={(e) =>
+                                dispatchRtcAction({
+                                  type: "BIND_KEY",
+                                  payload: { key: "tts.appId", value: e.target.value },
+                                })
+                              }
                               placeholder="TTS App ID"
                             />
                           </div>
@@ -621,19 +656,19 @@ export const EnhancedPlayground: React.FC = () => {
                               type="text"
                               className="w-full rounded-md border px-3 py-1.5 text-sm"
                               value={appConfig.llm.endpointId || ""}
-                              onChange={(e) => dispatchRtcAction({ type: "BIND_KEY", payload: { key: "llm.endpointId", value: e.target.value } })}
+                              onChange={(e) =>
+                                dispatchRtcAction({
+                                  type: "BIND_KEY",
+                                  payload: { key: "llm.endpointId", value: e.target.value },
+                                })
+                              }
                               placeholder="ep-xxxxx"
                             />
                           </div>
                         </div>
                       </div>
 
-                      <Button 
-                        onClick={() => setShowFullConfig(true)} 
-                        variant="outline" 
-                        className="w-full" 
-                        size="sm"
-                      >
+                      <Button onClick={() => setShowFullConfig(true)} variant="outline" className="w-full" size="sm">
                         <Settings className="mr-2 h-3 w-3" />
                         查看完整配置
                       </Button>
@@ -683,7 +718,7 @@ export const EnhancedPlayground: React.FC = () => {
                           )
                         })}
                       </div>
-                      
+
                       {testResults.length > 0 && (
                         <div className="mt-4 max-h-40 space-y-2 overflow-y-auto">
                           <Label className="text-sm font-medium">测试结果</Label>
@@ -737,60 +772,59 @@ export const EnhancedPlayground: React.FC = () => {
             {/* 右侧监控面板 */}
             <div className="w-80 flex-shrink-0">
               <div className="h-full space-y-4">
-                <Card className="flex-1">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center gap-2 text-base">
-                      <Monitor className="h-4 w-4 text-green-600" />
-                      实时监控
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="h-full min-h-0">
-                    <div className="h-full overflow-y-auto">
-                      <DebugMonitor />
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base">模块测试器</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ModuleTester />
-                  </CardContent>
-                </Card>
-                
+                <DebugMonitor />
+
+                <ModuleTester />
+
                 {/* 摄像头预览 */}
-                {isCameraEnabled && cameraStream && (
+                {(isCameraEnabled && cameraStream) || cameraError ? (
                   <Card>
                     <CardHeader className="pb-3">
                       <CardTitle className="flex items-center gap-2 text-base">
-                        <Camera className="h-4 w-4 text-green-600" />
-                        摄像头预览
+                        {cameraError ? (
+                          <AlertCircle className="h-4 w-4 text-red-600" />
+                        ) : (
+                          <Camera className="h-4 w-4 text-green-600" />
+                        )}
+                        摄像头
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="relative">
-                        <video
-                          ref={(video) => {
-                            if (video && cameraStream) {
-                              video.srcObject = cameraStream
-                              video.play()
-                            }
-                          }}
-                          className="w-full rounded-lg bg-black"
-                          style={{ aspectRatio: '4/3' }}
-                          muted
-                          playsInline
-                        />
-                        <div className="absolute top-2 right-2 flex items-center gap-1 rounded-full bg-green-500 px-2 py-1 text-xs text-white">
-                          <div className="h-2 w-2 rounded-full bg-white animate-pulse" />
-                          <span>录制中</span>
+                      {cameraError ? (
+                        <Alert variant="destructive">
+                          <AlertCircle className="h-4 w-4" />
+                          <AlertDescription className="text-sm">
+                            {cameraError}
+                            <div className="mt-2">
+                              <Button size="sm" variant="outline" onClick={handleCameraToggle} className="text-xs">
+                                重试
+                              </Button>
+                            </div>
+                          </AlertDescription>
+                        </Alert>
+                      ) : (
+                        <div className="relative">
+                          <video
+                            ref={(video) => {
+                              if (video && cameraStream) {
+                                video.srcObject = cameraStream
+                                video.play()
+                              }
+                            }}
+                            className="w-full rounded-lg bg-black"
+                            style={{ aspectRatio: "4/3" }}
+                            muted
+                            playsInline
+                          />
+                          <div className="absolute top-2 right-2 flex items-center gap-1 rounded-full bg-green-500 px-2 py-1 text-xs text-white">
+                            <div className="h-2 w-2 animate-pulse rounded-full bg-white" />
+                            <span>录制中</span>
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </CardContent>
                   </Card>
-                )}
+                ) : null}
               </div>
             </div>
           </div>
@@ -798,7 +832,7 @@ export const EnhancedPlayground: React.FC = () => {
       </div>
 
       {/* 快速设备控制栏 - 底部固定 */}
-      <div className="fixed bottom-0 left-0 right-0 z-40">
+      <div className="fixed right-0 bottom-0 left-0 z-40">
         <QuickDeviceControls
           isSpeakerEnabled={isSpeakerEnabled}
           isCameraEnabled={isCameraEnabled}
@@ -820,12 +854,7 @@ export const EnhancedPlayground: React.FC = () => {
                   <h2 className="text-xl font-semibold">完整配置</h2>
                   <p className="text-sm text-gray-600">火山引擎服务的详细配置参数</p>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowFullConfig(false)}
-                  className="rounded-full"
-                >
+                <Button variant="ghost" size="sm" onClick={() => setShowFullConfig(false)} className="rounded-full">
                   <X className="h-4 w-4" />
                 </Button>
               </div>

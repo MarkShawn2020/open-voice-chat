@@ -228,7 +228,7 @@ export const DebugMonitor: React.FC = () => {
   }
 
   return (
-    <Card className="h-full">
+    <Card className="">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div>
