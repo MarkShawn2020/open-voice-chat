@@ -215,7 +215,7 @@ export const PersonDetection: React.FC<PersonDetectionProps> = ({
           videoWidth={videoElement.videoWidth || 640}
           videoHeight={videoElement.videoHeight || 480}
           showBoundingBoxes={true}
-          showPersonDetails={true}
+          _showPersonDetails={true}
         />
       )}
 
