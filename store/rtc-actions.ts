@@ -1,13 +1,13 @@
 // RTC 操作原子
 import { AGENT_PREFIX } from "@/constants"
-// import { startVoiceChat, stopVoiceChat } from "@/lib/voice-chat-actions"
+import { startVoiceChat, stopVoiceChat } from "@/lib/voice-chat-actions"
 import { appConfigAtom } from "@/store/app-config"
 import { handleRoomBinaryMessageReceived } from "@/store/message-handlers"
 
 import { rtcStateAtom } from "@/store/rtc-state"
 import { voiceChatStateAtom } from "@/store/voice-chat-state"
 import VERTC, { MediaType, RoomProfileType } from "@volcengine/rtc"
-import { atom, type Getter, type Setter } from "jotai/index"
+import { atom, type Getter, type Setter } from "jotai"
 import { set as lodashSet } from "lodash"
 
 // 操作类型定义
@@ -179,13 +179,39 @@ export const rtcActionsAtom = atom(null, (get: Getter, set: Setter, action: RTCA
           error: null,
         }))
 
-        // 临时禁用 voice chat 功能以避免 @volcengine/openapi 客户端打包问题
-        console.log("Voice chat temporarily disabled")
-        set(voiceChatStateAtom, (prev) => ({
-          ...prev,
-          isStarting: false,
-          error: "语音聊天功能暂时禁用",
-        }))
+        startVoiceChat({
+          systemMessage: action.systemMessage,
+          welcomeMessage: action.welcomeMessage,
+        })
+          .then((result) => {
+            if (result.success && result.data) {
+              console.log("启动 AI 语音聊天成功:", result.data)
+              set(voiceChatStateAtom, (prev) => ({
+                ...prev,
+                isAgentActive: true,
+                taskId: result.data.taskId,
+                agentUserId: `${AGENT_PREFIX}${result.data.taskId}`,
+                isStarting: false,
+                error: null,
+              }))
+            } else {
+              const errorMessage = result.error || "启动智能体失败"
+              console.error("启动 AI 语音聊天失败:", errorMessage)
+              set(voiceChatStateAtom, (prev) => ({
+                ...prev,
+                isStarting: false,
+                error: errorMessage,
+              }))
+            }
+          })
+          .catch((error) => {
+            console.error("启动 AI 语音聊天失败:", error)
+            set(voiceChatStateAtom, (prev) => ({
+              ...prev,
+              isStarting: false,
+              error: error instanceof Error ? error.message : "启动智能体失败",
+            }))
+          })
       }
       break
 
@@ -198,8 +224,7 @@ export const rtcActionsAtom = atom(null, (get: Getter, set: Setter, action: RTCA
           error: null,
         }))
 
-        // 临时禁用 voice chat 功能
-        Promise.resolve({ success: true })
+        stopVoiceChat(voiceChatState.taskId)
           .then((result) => {
             if (result.success) {
               console.log("停止 AI 语音聊天成功")
@@ -212,7 +237,7 @@ export const rtcActionsAtom = atom(null, (get: Getter, set: Setter, action: RTCA
                 error: null,
               }))
             } else {
-              const errorMessage = "停止智能体失败"
+              const errorMessage = result.error || "停止智能体失败"
               console.error("停止 AI 语音聊天失败:", errorMessage)
               set(voiceChatStateAtom, (prev) => ({
                 ...prev,
