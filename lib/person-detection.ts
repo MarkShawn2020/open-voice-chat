@@ -64,6 +64,9 @@ export class PersonDetector {
     interactingCount: 0
   }
   private lastDetectionTime = 0
+  private poseTimestamp = 0
+  private faceTimestamp = 0
+  private handTimestamp = 0
   private gestureHistory: Array<{ timestamp: number; hands: any[] }> = []
 
   constructor(
@@ -97,6 +100,15 @@ export class PersonDetector {
   private async initializeMediaPipe(): Promise<void> {
     try {
       console.log('Initializing MediaPipe Tasks...')
+      
+      // 暂时禁用 console.error 来避免 MediaPipe 的信息日志被误认为错误
+      const originalError = console.error
+      console.error = (...args: any[]) => {
+        const message = args.join(' ')
+        if (!message.includes('INFO:') && !message.includes('TensorFlow Lite')) {
+          originalError.apply(console, args)
+        }
+      }
       
       // 初始化FilesetResolver
       const vision = await FilesetResolver.forVisionTasks(
@@ -164,7 +176,7 @@ export class PersonDetector {
       return
     }
 
-    const now = Date.now()
+    const now = performance.now()
     if (now - this.lastDetectionTime < this.config.detectionInterval) {
       this.animationFrameId = requestAnimationFrame(() => this.detect())
       return
@@ -172,14 +184,19 @@ export class PersonDetector {
     this.lastDetectionTime = now
 
     try {
+      // 为每个检测器使用单独的单调递增时间戳
+      this.poseTimestamp += 1
+      this.faceTimestamp += 1
+      this.handTimestamp += 1
+      
       // 检测姿态
-      const poseResults = this.poseLandmarker.detectForVideo(this.video, now)
+      const poseResults = this.poseLandmarker.detectForVideo(this.video, this.poseTimestamp)
       
       // 检测面部
-      const faceResults = this.faceLandmarker.detectForVideo(this.video, now)
+      const faceResults = this.faceLandmarker.detectForVideo(this.video, this.faceTimestamp)
       
       // 检测手部
-      const handResults = this.handLandmarker.detectForVideo(this.video, now)
+      const handResults = this.handLandmarker.detectForVideo(this.video, this.handTimestamp)
 
       // 处理检测结果
       const detectionResult = this.processDetectionResults(poseResults, faceResults, handResults)
