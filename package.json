@@ -1,6 +1,6 @@
 {
   "name": "open-voice-chat",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Open source real-time voice chat application powered by ByteDance Doubao AI",
   "keywords": [
     "voice-chat",
