@@ -70,6 +70,8 @@ export const QuickDeviceControls: React.FC<QuickDeviceControlsProps> = ({
         const devices = await navigator.mediaDevices.enumerateDevices()
         const speakers = devices.filter(d => d.kind === 'audiooutput')
         const cameras = devices.filter(d => d.kind === 'videoinput')
+
+        console.log({devices, speakers, cameras})
         
         setSpeakerDevices(speakers)
         setCameraDevices(cameras)

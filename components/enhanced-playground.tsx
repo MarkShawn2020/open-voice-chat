@@ -697,10 +697,10 @@ export const EnhancedPlayground: React.FC = () => {
                                       result?.status === "success"
                                         ? "#10b981"
                                         : result?.status === "error"
-                                        ? "#ef4444"
-                                        : result?.status === "testing"
-                                        ? "#f59e0b"
-                                        : "#d1d5db",
+                                          ? "#ef4444"
+                                          : result?.status === "testing"
+                                            ? "#f59e0b"
+                                            : "#d1d5db",
                                   }}
                                 />
                                 <span className="text-sm font-medium uppercase">{module}</span>
@@ -752,22 +752,7 @@ export const EnhancedPlayground: React.FC = () => {
 
           {/* 主要内容区域 */}
           <div className="flex flex-1 gap-4">
-            {/* 对话记录 */}
-            <div className="flex-1">
-              <Card className="h-full">
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <MessageSquare className="h-5 w-5 text-blue-600" />
-                    对话记录
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="h-full min-h-0">
-                  <div className="h-full overflow-y-auto">
-                    <ChatHistory />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            <ChatHistory />
 
             {/* 右侧监控面板 */}
             <div className="w-80 flex-shrink-0">

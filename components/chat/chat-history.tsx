@@ -49,7 +49,7 @@ export const ChatHistory = () => {
   const displayMessages = isHydrated ? messages : []
 
   return (
-    <Card className="flex h-full flex-col">
+    <Card className="flex h-full flex-col flex-1">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div>
