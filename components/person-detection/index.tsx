@@ -172,12 +172,17 @@ export const PersonDetection: React.FC<PersonDetectionProps> = ({
   }, [])
 
   const handleToggleDetection = useCallback(() => {
+    console.log('handleToggleDetection called', { videoElement, isRunning })
     if (!videoElement) {
       toast.error("请先启用摄像头")
       return
     }
-    setIsRunning(prev => !prev)
-  }, [videoElement])
+    setIsRunning(prev => {
+      const newValue = !prev
+      console.log('Setting isRunning to:', newValue)
+      return newValue
+    })
+  }, [videoElement, isRunning])
 
   const handleResetStats = useCallback(() => {
     setStats({

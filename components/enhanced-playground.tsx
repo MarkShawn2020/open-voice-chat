@@ -474,46 +474,6 @@ export const EnhancedPlayground: React.FC = () => {
     }
   }
 
-  // 磁吸边缘效果
-  const snapToEdge = (x: number, y: number) => {
-    if (typeof window === 'undefined') return { x, y }
-    
-    const windowWidth = window.innerWidth
-    const windowHeight = window.innerHeight
-    const elementWidth = 256 // w-64 = 256px
-    const elementHeight = 300 // 大约高度
-    const snapThreshold = 50 // 距离边缘50px时触发磁吸
-    const edgeMargin = 16 // 距离边缘16px
-    
-    let snapX = x
-    let snapY = y
-    let shouldSnap = false
-    
-    // 检查左右边缘
-    if (x <= snapThreshold) {
-      snapX = -windowWidth + elementWidth + edgeMargin
-      shouldSnap = true
-    } else if (x >= windowWidth - elementWidth - snapThreshold) {
-      snapX = windowWidth - elementWidth - edgeMargin
-      shouldSnap = true
-    }
-    
-    // 检查上下边缘
-    if (y <= snapThreshold) {
-      snapY = -windowHeight + elementHeight + edgeMargin + 80 // 保留顶部空间
-      shouldSnap = true
-    } else if (y >= windowHeight - elementHeight - snapThreshold - 80) {
-      snapY = windowHeight - elementHeight - edgeMargin - 80 // 保留底部控制栏空间
-      shouldSnap = true
-    }
-    
-    const snapResult = { x, snapX, y, snapY, shouldSnap, windowWidth, windowHeight }
-    console.log("Snap result:", snapResult)
-    return snapResult
-  }
-
-console.log("Camera:", {isCameraEnabled, cameraStream, cameraError})
-
   // 防止服务端渲染不匹配
   if (!isClient) {
     return (

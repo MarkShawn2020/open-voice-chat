@@ -304,7 +304,10 @@ export const QuickDeviceControls: React.FC<QuickDeviceControlsProps> = ({
         <Button
           variant={isPersonDetectionEnabled ? "default" : "secondary"}
           size="sm"
-          onClick={onPersonDetectionToggle}
+          onClick={() => {
+            console.log('Person detection button clicked', { isPersonDetectionEnabled, isCameraEnabled })
+            onPersonDetectionToggle?.()
+          }}
           disabled={!isCameraEnabled}
           className="flex items-center gap-1"
           title={!isCameraEnabled ? "请先启用摄像头" : isPersonDetectionEnabled ? "关闭人员检测" : "开启人员检测"}

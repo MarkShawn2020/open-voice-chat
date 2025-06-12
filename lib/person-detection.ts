@@ -175,6 +175,14 @@ export class PersonDetector {
   }
 
   private onResults(results: Results): void {
+    console.log('MediaPipe onResults called, isRunning:', this.isRunning)
+    console.log('Detection results:', {
+      poseLandmarks: results.poseLandmarks?.length || 0,
+      faceLandmarks: results.faceLandmarks?.length || 0,
+      rightHandLandmarks: results.rightHandLandmarks?.length || 0,
+      leftHandLandmarks: results.leftHandLandmarks?.length || 0
+    })
+
     if (!this.isRunning) return
 
     const now = Date.now()
@@ -185,6 +193,7 @@ export class PersonDetector {
 
     try {
       const detectionResult = this.processHolisticResults(results)
+      console.log('Processed detection result:', detectionResult)
       this.updateStats(detectionResult)
       this.callbacks.onDetectionUpdate?.(detectionResult)
     } catch (error) {
@@ -827,7 +836,9 @@ export class PersonDetector {
 
       await this.camera.start()
       this.isRunning = true
-      console.log('Person detection started')
+      console.log('Person detection started successfully')
+      console.log('Camera started, video element:', this.video)
+      console.log('Video dimensions:', this.video.videoWidth, 'x', this.video.videoHeight)
     } catch (error) {
       console.error('Failed to start person detection:', error)
       this.callbacks.onError?.(error as Error)
