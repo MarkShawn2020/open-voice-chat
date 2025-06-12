@@ -6,6 +6,10 @@ import { DebugMonitor } from "@/components/debug-monitor"
 import { ErrorDiagnostics } from "@/components/error-diagnostics"
 import { ModuleTester } from "@/components/module-tester"
 import { VoiceSelector } from "@/components/voice-selector"
+import { DeviceSelector } from "@/components/device-selector"
+import { DeviceStatus } from "@/components/device-status"
+import { QuickDeviceControls } from "@/components/quick-device-controls"
+import { useMicStore, useMicActions } from "@/store/mic"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -58,6 +62,10 @@ export const EnhancedPlayground: React.FC = () => {
   const [voiceChatState] = useAtom(voiceChatStateAtom)
   const [, dispatchRtcAction] = useAtom(rtcActionsAtom)
   const [isClient, setIsClient] = useState(false)
+  
+  // 获取麦克风状态
+  const { curMicState } = useMicStore()
+  const { toggleMic } = useMicActions()
 
   // 确保在客户端渲染
   useEffect(() => {
@@ -214,15 +222,10 @@ export const EnhancedPlayground: React.FC = () => {
     dispatchRtcAction({ type: "LEAVE_ROOM" })
   }
 
-  // 切换音频
+  // 切换音频 - 使用mic store
   const toggleAudio = () => {
-    if (rtcState.isLocalAudioEnabled) {
-      dispatchRtcAction({ type: "STOP_LOCAL_AUDIO" })
-      addDebugLog("停止本地音频")
-    } else {
-      dispatchRtcAction({ type: "START_LOCAL_AUDIO" })
-      addDebugLog("启动本地音频")
-    }
+    toggleMic()
+    addDebugLog(`麦克风${curMicState.isOn ? "关闭" : "开启"}`)
   }
 
   // 启动AI智能体
@@ -285,11 +288,30 @@ export const EnhancedPlayground: React.FC = () => {
                   <Users className="h-4 w-4 text-blue-500" />
                   <span className="text-blue-600">{rtcState.remoteUsers.length} 用户在线</span>
                 </div>
+                
+                {/* 设备状态显示 */}
+                <div className="hidden lg:block">
+                  <DeviceStatus
+                    isMicEnabled={curMicState.isOn}
+                    isSpeakerEnabled={true}
+                    isCameraEnabled={false}
+                    microphoneName="默认麦克风"
+                    speakerName="默认扬声器"
+                    cameraName="默认摄像头"
+                  />
+                </div>
               </div>
             </div>
             
             {/* 主要操作按钮 */}
             <div className="flex items-center gap-2">
+              {/* 设备设置按钮 - 始终显示 */}
+              <DeviceSelector 
+                onDeviceChange={(device) => {
+                  addDebugLog(`设备切换: ${device.type} -> ${device.deviceId}`)
+                }}
+              />
+              
               {!rtcState.isConnected ? (
                 <Button onClick={handleJoinRoom} disabled={!config} size="sm">
                   <Phone className="mr-2 h-4 w-4" />
@@ -299,10 +321,11 @@ export const EnhancedPlayground: React.FC = () => {
                 <>
                   <Button
                     onClick={toggleAudio}
-                    variant={rtcState.isLocalAudioEnabled ? "default" : "secondary"}
+                    variant={curMicState.isOn ? "default" : "secondary"}
                     size="sm"
+                    disabled={!curMicState.isPermissionGranted}
                   >
-                    {rtcState.isLocalAudioEnabled ? (
+                    {curMicState.isOn ? (
                       <Mic className="mr-1 h-3 w-3" />
                     ) : (
                       <MicOff className="mr-1 h-3 w-3" />
@@ -349,7 +372,7 @@ export const EnhancedPlayground: React.FC = () => {
       </div>
 
       {/* 主要内容区域 */}
-      <div className="container mx-auto flex h-full overflow-hidden p-4">
+      <div className="container mx-auto flex h-full overflow-hidden p-4 pb-20">
         <div className="flex h-full w-full gap-4">
           {/* 左侧边栏 - 配置和控制 */}
           <div className="w-80 flex-shrink-0 overflow-y-auto">
@@ -702,6 +725,23 @@ export const EnhancedPlayground: React.FC = () => {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* 快速设备控制栏 - 底部固定 */}
+      <div className="fixed bottom-0 left-0 right-0 z-40">
+        <QuickDeviceControls
+          isSpeakerEnabled={true}
+          isCameraEnabled={false}
+          onSpeakerToggle={() => {
+            addDebugLog("扬声器开关切换")
+          }}
+          onCameraToggle={() => {
+            addDebugLog("摄像头开关切换")
+          }}
+          onDeviceChange={(device) => {
+            addDebugLog(`设备切换: ${device.type} -> ${device.deviceId}`)
+          }}
+        />
       </div>
 
       {/* 完整配置模态框 */}
