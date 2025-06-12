@@ -11,6 +11,7 @@ import { DebugPanel } from "@/components/playground/debug-panel"
 import { MainControls } from "@/components/playground/main-controls"
 import { QuickConfigPanel } from "@/components/playground/quick-config-panel"
 import { StatusBar } from "@/components/playground/status-bar"
+import { AIConfig, QuickConfig, TestResult } from "@/components/playground/types"
 import { VoiceConfigPanel } from "@/components/playground/voice-config-panel"
 import { QuickDeviceControls } from "@/components/quick-device-controls"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -30,13 +31,6 @@ import {
 import React, { useEffect, useState } from "react"
 import { toast } from "sonner"
 
-interface TestResult {
-  module: string
-  status: "success" | "error" | "testing"
-  message: string
-  startTime: number
-  duration?: number
-}
 
 export const EnhancedPlayground: React.FC = () => {
   const [appConfig] = useAtom(appConfigAtom)
@@ -88,7 +82,7 @@ export const EnhancedPlayground: React.FC = () => {
   const [showFullConfig, setShowFullConfig] = useState(false)
 
   // 快速配置预设
-  const [quickConfig, setQuickConfig] = useState({
+  const [quickConfig, setQuickConfig] = useState<QuickConfig>({
     scenario: "default",
     asrMode: appConfig.asr.mode,
     ttsVoice: appConfig.tts.voiceType,
@@ -111,7 +105,7 @@ export const EnhancedPlayground: React.FC = () => {
   const controls = useAnimation()
 
   // AI配置
-  const [aiConfig, setAiConfig] = useState({
+  const [aiConfig, setAiConfig] = useState<AIConfig>({
     systemMessage: appConfig.llm.systemMessage,
     welcomeMessage: appConfig.llm.welcomeMessage,
   })
@@ -456,15 +450,15 @@ console.log("Camera:", {isCameraEnabled, cameraStream, cameraError})
                 <TabsContent value="control" className="mt-0 space-y-4">
                   <AIControlPanel
                     aiConfig={aiConfig}
-                    quickConfig={quickConfig}
+                    llmTemp={quickConfig.llmTemp}
                     onAIConfigChange={setAiConfig}
-                    onQuickConfigChange={setQuickConfig}
+                    onLLMTempChange={(temp) => setQuickConfig({ ...quickConfig, llmTemp: temp })}
                     onApplyConfig={applyQuickConfig}
                   />
 
                   <VoiceConfigPanel
-                    quickConfig={quickConfig}
-                    onQuickConfigChange={setQuickConfig}
+                    asrMode={quickConfig.asrMode}
+                    onASRModeChange={(mode) => setQuickConfig({ ...quickConfig, asrMode: mode })}
                     onApplyConfig={applyQuickConfig}
                   />
                 </TabsContent>

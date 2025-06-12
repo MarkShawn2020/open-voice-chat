@@ -12,28 +12,21 @@ import { useAtom } from "jotai"
 import { RefreshCw } from "lucide-react"
 import { toast } from "sonner"
 
-interface AIConfig {
-  systemMessage: string
-  welcomeMessage: string
-}
-
-interface QuickConfig {
-  llmTemp: number
-}
+import { AIConfig, QuickConfig } from "./types"
 
 interface AIControlPanelProps {
   aiConfig: AIConfig
-  quickConfig: QuickConfig
+  llmTemp: number
   onAIConfigChange: (config: AIConfig) => void
-  onQuickConfigChange: (config: QuickConfig) => void
+  onLLMTempChange: (temp: number) => void
   onApplyConfig: () => void
 }
 
 export const AIControlPanel: React.FC<AIControlPanelProps> = ({
   aiConfig,
-  quickConfig,
+  llmTemp,
   onAIConfigChange,
-  onQuickConfigChange,
+  onLLMTempChange,
   onApplyConfig,
 }) => {
   const [appConfig] = useAtom(appConfigAtom)
@@ -67,10 +60,10 @@ export const AIControlPanel: React.FC<AIControlPanelProps> = ({
           />
         </div>
         <div className="space-y-2">
-          <Label className="text-sm font-medium">LLM温度: {quickConfig.llmTemp}</Label>
+          <Label className="text-sm font-medium">LLM温度: {llmTemp}</Label>
           <Slider
-            value={[quickConfig.llmTemp]}
-            onValueChange={([value]: number[]) => onQuickConfigChange({ ...quickConfig, llmTemp: value! })}
+            value={[llmTemp]}
+            onValueChange={([value]: number[]) => onLLMTempChange(value!)}
             min={0}
             max={2}
             step={0.1}

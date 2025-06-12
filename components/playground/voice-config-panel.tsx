@@ -10,20 +10,17 @@ import { rtcActionsAtom } from "@/store/rtc-actions"
 import { useAtom } from "jotai"
 import { RefreshCw } from "lucide-react"
 
-interface QuickConfig {
-  asrMode: "realtime" | "bigmodel"
-  ttsVoice: string
-}
+import { QuickConfig } from "./types"
 
 interface VoiceConfigPanelProps {
-  quickConfig: QuickConfig
-  onQuickConfigChange: (config: QuickConfig) => void
+  asrMode: "realtime" | "bigmodel"
+  onASRModeChange: (mode: "realtime" | "bigmodel") => void
   onApplyConfig: () => void
 }
 
 export const VoiceConfigPanel: React.FC<VoiceConfigPanelProps> = ({
-  quickConfig,
-  onQuickConfigChange,
+  asrMode,
+  onASRModeChange,
   onApplyConfig,
 }) => {
   const [appConfig] = useAtom(appConfigAtom)
@@ -38,9 +35,9 @@ export const VoiceConfigPanel: React.FC<VoiceConfigPanelProps> = ({
         <div className="space-y-2">
           <Label className="text-sm font-medium">ASR模式</Label>
           <Select
-            value={quickConfig.asrMode}
+            value={asrMode}
             onValueChange={(value) =>
-              onQuickConfigChange({ ...quickConfig, asrMode: value as "realtime" | "bigmodel" })
+              onASRModeChange(value as "realtime" | "bigmodel")
             }
           >
             <SelectTrigger>

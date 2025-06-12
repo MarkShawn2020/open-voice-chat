@@ -5,13 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label"
 import { AlertCircle, CheckCircle, Play } from "lucide-react"
 
-interface TestResult {
-  module: string
-  status: "success" | "error" | "testing"
-  message: string
-  startTime: number
-  duration?: number
-}
+import { TestResult } from "./types"
 
 interface DebugPanelProps {
   testResults: TestResult[]
