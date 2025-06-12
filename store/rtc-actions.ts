@@ -1,3 +1,5 @@
+'use client'
+
 // RTC 操作原子
 import { AGENT_PREFIX } from "@/constants"
 import { startVoiceChat, stopVoiceChat } from "@/lib/voice-chat-actions"
@@ -24,6 +26,7 @@ export type RTCAction =
   | { type: "SET_ERROR"; payload: string }
   | { type: "CLEAR_ERROR" }
   | { type: "BIND_KEY", payload: { key: string, value: string } }
+
 export const rtcActionsAtom = atom(null, (get: Getter, set: Setter, action: RTCAction) => {
   const state = get(rtcStateAtom)
   const config = get(appConfigAtom)

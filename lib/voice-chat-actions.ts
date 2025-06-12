@@ -1,8 +1,8 @@
 "use server"
 
 import { AGENT_PREFIX } from "@/constants"
-import { Signer } from "@volcengine/openapi"
 import { v4 as uuidv4 } from "uuid"
+import { Signer } from "@volcengine/openapi"
 
 // Volcengine API 配置
 const VOLCENGINE_API_BASE = "https://rtc.volcengineapi.com"
