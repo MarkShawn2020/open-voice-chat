@@ -2,7 +2,8 @@
 
 import {isChattingAtom} from "@/store/app-state";
 import { useAtom } from "jotai"
-import { MessageCircle, Sparkles } from "lucide-react"
+import { MessageCircle, Sparkles, X } from "lucide-react"
+import { useEffect, useState } from "react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -10,9 +11,62 @@ import { Card, CardContent } from "@/components/ui/card"
 
 export default function Web() {
   const [isChatting] = useAtom(isChattingAtom)
+  const [showWelcome, setShowWelcome] = useState(false)
+
+  useEffect(() => {
+    const hasVisited = localStorage.getItem('hasVisitedBefore')
+    if (!hasVisited) {
+      setShowWelcome(true)
+      localStorage.setItem('hasVisitedBefore', 'true')
+    }
+  }, [])
 
   return (
     <div className=" bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 h-full overflow-auto">
+      {/* Welcome Modal */}
+      {showWelcome && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <Card className="max-w-md w-full border-0 shadow-2xl bg-white">
+            <CardContent className="p-6">
+              <div className="flex justify-between items-start mb-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                  <Sparkles className="w-6 h-6 text-white" />
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowWelcome(false)}
+                  className="h-8 w-8 p-0 text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+              <h2 className="text-2xl font-bold text-gray-800 mb-3">
+                欢迎使用 AI 语音聊天！
+              </h2>
+              <p className="text-gray-600 mb-6 leading-relaxed">
+                体验全新的AI语音对话，选择你喜欢的AI角色，自然语音交流，实时智能回复。让我们开始一段精彩的对话吧！
+              </p>
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => setShowWelcome(false)}
+                  className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                >
+                  开始体验
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowWelcome(false)}
+                  className="px-4"
+                >
+                  稍后
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* Background Pattern */}
       <div 
         className="absolute inset-0 opacity-40"
