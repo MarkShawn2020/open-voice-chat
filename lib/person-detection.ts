@@ -1,6 +1,7 @@
 // 基于MediaPipe Tasks的现代人员检测实现
 
 "use client"
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import {
   PoseLandmarker,

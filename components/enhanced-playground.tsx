@@ -7,6 +7,7 @@ import { ModuleTester } from "@/components/module-tester"
 import { PersonDetection } from "@/components/person-detection"
 import { PersonDetectionCard } from "@/components/person-detection/person-detection-card"
 import { EventLog, SystemState } from "@/components/person-detection/types"
+import type { PersonDetectionResult } from "@/types/person-detection"
 import { AIControlPanel } from "@/components/playground/ai-control-panel"
 import { CameraPreview } from "@/components/playground/camera-preview"
 import { ConfigModal } from "@/components/playground/config-modal"
@@ -53,7 +54,7 @@ export const EnhancedPlayground: React.FC = () => {
         const elementWidth = 256 // w-64 = 256px
         const elementHeight = 300 // 大约高度
 
-        setDragConstraints({
+        _setDragConstraints({
           top: -windowHeight + elementHeight - 80, // 保留80px底部空间给控制栏
           left: -windowWidth + elementWidth,
           right: windowWidth - elementWidth,
@@ -73,8 +74,8 @@ export const EnhancedPlayground: React.FC = () => {
   }, [])
 
   // 调试状态
-  const [testResults, setTestResults] = useState<TestResult[]>([])
-  const [debugLogs, setDebugLogs] = useState<string[]>([])
+  const [_testResults, _setTestResults] = useState<TestResult[]>([])
+  const [_debugLogs, _setDebugLogs] = useState<string[]>([])
   const [activeTab, setActiveTab] = useState("control")
   const [showFullConfig, setShowFullConfig] = useState(false)
 
@@ -95,7 +96,7 @@ export const EnhancedPlayground: React.FC = () => {
 
   // 人员检测状态
   const [isPersonDetectionEnabled, setIsPersonDetectionEnabled] = useState(false)
-  const [detectionResult, setDetectionResult] = useState<any>(null)
+  const [detectionResult, setDetectionResult] = useState<PersonDetectionResult | null>(null)
   
   // 系统状态和事件日志
   const [systemState, setSystemState] = useState<SystemState>("waiting")
@@ -103,7 +104,7 @@ export const EnhancedPlayground: React.FC = () => {
 
   // 当前选择的摄像头设备ID
   const [selectedCameraId, setSelectedCameraId] = useState<string>("")
-  const [personDetectionConfig, setPersonDetectionConfig] = useState({
+  const [_personDetectionConfig, _setPersonDetectionConfig] = useState({
     detectionInterval: 200,
     minConfidence: 0.6,
     maxPersons: 10,
@@ -113,20 +114,20 @@ export const EnhancedPlayground: React.FC = () => {
     enableFaceRecognition: true,
     enablePoseDetection: true,
   })
-  const [personDetectionStats, setPersonDetectionStats] = useState({
+  const [_personDetectionStats, _setPersonDetectionStats] = useState({
     totalDetections: 0,
     averageStayDuration: 0,
     maxSimultaneousPersons: 0,
     lookingAtCameraCount: 0,
     interactingCount: 0,
   })
-  const [dragConstraints, setDragConstraints] = useState({
+  const [_dragConstraints, _setDragConstraints] = useState({
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
   })
-  const [isSnapping, setIsSnapping] = useState(false)
+  const [_isSnapping, _setIsSnapping] = useState(false)
   const controls = useAnimation()
 
   // AI配置
@@ -138,7 +139,7 @@ export const EnhancedPlayground: React.FC = () => {
   // 添加调试日志
   const addDebugLog = (message: string) => {
     const timestamp = new Date().toLocaleTimeString()
-    setDebugLogs((prev) => [...prev.slice(-49), `[${timestamp}] ${message}`])
+    _setDebugLogs((prev) => [...prev.slice(-49), `[${timestamp}] ${message}`])
   }
 
   // 添加事件日志
@@ -153,110 +154,10 @@ export const EnhancedPlayground: React.FC = () => {
     setEventLogs((prev) => [...prev.slice(-29), newLog]) // 保留最近30条
   }
 
-  // 运行模块测试
-  const runModuleTest = async (module: string) => {
-    const startTime = Date.now()
-    const newTest: TestResult = {
-      module,
-      status: "testing",
-      message: "正在测试...",
-      startTime,
-    }
-
-    setTestResults((prev) => prev.filter((t) => t.module !== module).concat(newTest))
-    addDebugLog(`开始测试 ${module}`)
-
-    try {
-      switch (module) {
-        case "rtc":
-          if (!appConfig.rtc.appId || !appConfig.rtc.token) {
-            throw new Error("RTC配置不完整")
-          }
-          // 这里可以添加实际的RTC连接测试
-          setTestResults((prev) =>
-            prev.map((t) =>
-              t.module === module
-                ? {
-                    ...t,
-                    status: "success",
-                    message: "RTC配置验证通过",
-                  }
-                : t
-            )
-          )
-          break
-
-        case "asr":
-          if (!appConfig.asr.appId || !appConfig.asr.accessToken) {
-            throw new Error("ASR配置不完整")
-          }
-          setTestResults((prev) =>
-            prev.map((t) =>
-              t.module === module
-                ? {
-                    ...t,
-                    status: "success",
-                    message: "ASR配置验证通过",
-                  }
-                : t
-            )
-          )
-          break
-
-        case "tts":
-          if (!appConfig.tts.appId || !appConfig.tts.accessToken) {
-            throw new Error("TTS配置不完整")
-          }
-          setTestResults((prev) =>
-            prev.map((t) =>
-              t.module === module
-                ? {
-                    ...t,
-                    status: "success",
-                    message: "TTS配置验证通过",
-                  }
-                : t
-            )
-          )
-          break
-
-        case "llm":
-          if (!appConfig.llm.endpointId) {
-            throw new Error("LLM配置不完整")
-          }
-          setTestResults((prev) =>
-            prev.map((t) =>
-              t.module === module
-                ? {
-                    ...t,
-                    status: "success",
-                    message: "LLM配置验证通过",
-                  }
-                : t
-            )
-          )
-          break
-      }
-      const duration = Date.now() - startTime
-      setTestResults((prev) => prev.map((t) => (t.module === module ? { ...t, status: "success", duration } : t)))
-      addDebugLog(`${module} 测试通过`)
-    } catch (error) {
-      const duration = Date.now() - startTime
-      setTestResults((prev) =>
-        prev.map((t) =>
-          t.module === module
-            ? {
-                ...t,
-                status: "error",
-                message: error instanceof Error ? error.message : "测试失败",
-                duration,
-              }
-            : t
-        )
-      )
-      addDebugLog(`${module} 测试失败: ${error}`)
-    }
-  }
+  // 运行模块测试 - 暂时未使用
+  // const _runModuleTest = async (module: string) => {
+  //   // 功能暂时禁用
+  // }
 
   // 快速应用配置
   const applyQuickConfig = () => {
@@ -288,10 +189,10 @@ export const EnhancedPlayground: React.FC = () => {
     }
     
     if (rtcState.isConnected && voiceChatState.isAgentActive) {
-      if (detectionResult && detectionResult.persons && detectionResult.persons.some((p: any) => p.state.isInteracting)) {
+      if (detectionResult && detectionResult.persons && detectionResult.persons.some((p) => p.state.isInteracting)) {
         setSystemState("interacting")
         addEventLog("state_changed", "开始与用户交互", "success")
-      } else if (detectionResult && detectionResult.persons && detectionResult.persons.some((p: any) => p.state.isLookingAtCamera)) {
+      } else if (detectionResult && detectionResult.persons && detectionResult.persons.some((p) => p.state.isLookingAtCamera)) {
         setSystemState("welcome")
         addEventLog("state_changed", "检测到用户注意，准备欢迎", "info")
       } else if (detectionResult && detectionResult.totalCount > 0) {
@@ -519,13 +420,13 @@ export const EnhancedPlayground: React.FC = () => {
   }
 
   // 人员检测结果更新
-  const handleDetectionResult = (result: any) => {
+  const handleDetectionResult = (result: PersonDetectionResult) => {
     setDetectionResult(result)
     
     // 检测注意力变化
     if (result && result.persons) {
-      const lookingCount = result.persons.filter((p: any) => p.state.isLookingAtCamera).length
-      const interactingCount = result.persons.filter((p: any) => p.state.isInteracting).length
+      const lookingCount = result.persons.filter((p) => p.state.isLookingAtCamera).length
+      const interactingCount = result.persons.filter((p) => p.state.isInteracting).length
       
       if (lookingCount > 0 && systemState === "appealing") {
         addEventLog("attention_gained", `${lookingCount}人开始注意摄像头`, "success")
@@ -538,19 +439,21 @@ export const EnhancedPlayground: React.FC = () => {
   }
 
   // 人员检测配置更新
-  const handlePersonDetectionConfigChange = (newConfig: Partial<typeof personDetectionConfig>) => {
-    setPersonDetectionConfig((prev) => ({ ...prev, ...newConfig }))
+  const _handlePersonDetectionConfigChange = (_newConfig: Partial<typeof _personDetectionConfig>) => {
+    // 暂时注释掉
+    // _setPersonDetectionConfig((prev) => ({ ...prev, ...newConfig }))
   }
 
   // 重置人员检测统计
-  const handleResetPersonDetectionStats = () => {
-    setPersonDetectionStats({
-      totalDetections: 0,
-      averageStayDuration: 0,
-      maxSimultaneousPersons: 0,
-      lookingAtCameraCount: 0,
-      interactingCount: 0,
-    })
+  const _handleResetPersonDetectionStats = () => {
+    // 暂时注释掉
+    // _setPersonDetectionStats({
+    //   totalDetections: 0,
+    //   averageStayDuration: 0,
+    //   maxSimultaneousPersons: 0,
+    //   lookingAtCameraCount: 0,
+    //   interactingCount: 0,
+    // })
   }
 
   // 切换摄像头设备

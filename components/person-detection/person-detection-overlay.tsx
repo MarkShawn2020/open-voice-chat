@@ -12,7 +12,7 @@ interface PersonDetectionOverlayProps {
   videoWidth: number
   videoHeight: number
   showBoundingBoxes?: boolean
-  showPersonDetails?: boolean
+  _showPersonDetails?: boolean
   className?: string
 }
 
@@ -21,7 +21,7 @@ export const PersonDetectionOverlay: React.FC<PersonDetectionOverlayProps> = ({
   videoWidth,
   videoHeight,
   showBoundingBoxes = true,
-  showPersonDetails = true,
+  _showPersonDetails = true,
   className = "",
 }) => {
   if (!detectionResult) return null

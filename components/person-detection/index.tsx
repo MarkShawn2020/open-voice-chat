@@ -69,7 +69,7 @@ export const PersonDetection: React.FC<PersonDetectionProps> = ({
       }
     }, [onDetectionUpdate]),
 
-    onPersonEntered: useCallback((person: any) => {
+    onPersonEntered: useCallback((person: { id: string }) => {
       // toast.info(`检测到新人员: #${person.id.slice(-4)}`)
       onPersonEntered?.(person.id)
     }, [onPersonEntered]),
