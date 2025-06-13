@@ -20,7 +20,11 @@ const config: NextConfig = {
     { source: "/health", destination: "/api/health" },
     { source: "/ping", destination: "/api/health" },
   ],
-  serverExternalPackages: ["@volcengine/openapi"],
+
+  serverExternalPackages: [
+    // 火山sdk用到了wasm，必须隔离在nodejs环境里，否则会报错
+    "@volcengine/openapi"
+  ],
 }
 
 export default env.ANALYZE ? withBundleAnalyzer({ enabled: env.ANALYZE })(config) : config

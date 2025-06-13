@@ -129,6 +129,7 @@ graph TB
 
 ### 👨‍💻 For Developers
 - [Development Guide](./docs/development.md)
+- [Development Experience & Troubleshooting](./DEV.md)
 - [Architecture Deep Dive](./docs/architecture.md)
 - [API Integration](./docs/api-integration.md)
 - [Contributing Guidelines](./CONTRIBUTING.md)

@@ -1,7 +1,7 @@
 "use server"
 
-import { signHeader } from "@/server/utils/sign-header"
 import { AGENT_PREFIX } from "@/constants"
+import { Signer } from "@volcengine/openapi"
 import { RequestObj } from "@volcengine/openapi/lib/base/types"
 import { v4 as uuidv4 } from "uuid"
 
@@ -64,6 +64,13 @@ async function createAuthHeaders(
   body: Record<string, unknown>
 ): Promise<Record<string, string>> {
 
+  const accessKey = process.env.VOLCENGINE_ACCESS_KEY
+  const secretKey = process.env.VOLCENGINE_SECRET_KEY
+
+  if (!accessKey || !secretKey) {
+    throw new Error("Missing VOLCENGINE_ACCESS_KEY or VOLCENGINE_SECRET_KEY")
+  }
+
   const openApiRequestData: RequestObj = {
     region: "cn-north-1",
     method: "POST",
@@ -78,7 +85,11 @@ async function createAuthHeaders(
     body,
   }
 
-  signHeader(openApiRequestData)
+  const signer = new Signer(openApiRequestData, "rtc")
+  signer.addAuthorization({
+    accessKeyId: accessKey,
+    secretKey: secretKey,
+  })
 
   return openApiRequestData.headers
 }
