@@ -12,6 +12,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
+import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { validateConfig } from "@/components/config/validate-config"
@@ -20,7 +21,7 @@ import { appConfigAtom } from "@/store/app-config"
 import { rtcActionsAtom } from "@/store/rtc-actions"
 import { rtcStateAtom } from "@/store/rtc-state"
 import { useAtom } from "jotai"
-import { Brain, HelpCircle, Mic, RefreshCw, Server, Settings, Volume2 } from "lucide-react"
+import { Brain, HelpCircle, Mic, RefreshCw, Server, Settings, Volume2, Wifi } from "lucide-react"
 import React, { useState } from "react"
 import { toast } from "sonner"
 
@@ -52,11 +53,65 @@ export const Config: React.FC = () => {
 
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6">
+      {/* 方案选择 */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Settings className="h-5 w-5" />
+            语音方案选择
+          </CardTitle>
+          <CardDescription>选择使用传统RTC方案还是端到端实时语音大模型方案</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <Label className="text-sm font-medium">当前方案</Label>
+                <p className="text-xs text-gray-600">
+                  {config.voiceMode === "rtc" 
+                    ? "RTC + ASR + TTS + LLM (传统方案)" 
+                    : "端到端实时语音大模型 (推荐)"}
+                </p>
+              </div>
+              <Select 
+                value={config.voiceMode} 
+                onValueChange={(value: "rtc" | "realtime") => setConfig({
+                  ...config,
+                  voiceMode: value
+                })}
+              >
+                <SelectTrigger className="w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="realtime">端到端实时语音大模型</SelectItem>
+                  <SelectItem value="rtc">RTC传统方案</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <Alert>
+              <HelpCircle className="h-4 w-4" />
+              <AlertDescription>
+                {config.voiceMode === "realtime" 
+                  ? "端到端方案直接连接到火山引擎实时语音大模型，延迟更低，配置更简单。"
+                  : "传统RTC方案需要分别配置ASR、TTS和LLM服务，适合需要精细控制的场景。"
+                }
+              </AlertDescription>
+            </Alert>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* 配置状态 */}
       <ConfigStatus errors={configErrors} />
 
-      <Tabs defaultValue="rtc" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+      <Tabs defaultValue={config.voiceMode === "realtime" ? "realtime" : "rtc"} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="realtime" className="flex items-center gap-2">
+            <Wifi className="h-4 w-4" />
+            <span className="hidden sm:inline">端到端语音</span>
+          </TabsTrigger>
           <TabsTrigger value="rtc" className="flex items-center gap-2">
             <Server className="h-4 w-4" />
             <span className="hidden sm:inline">RTC</span>
@@ -70,6 +125,208 @@ export const Config: React.FC = () => {
             <span className="hidden sm:inline">大模型</span>
           </TabsTrigger>
         </TabsList>
+
+        {/* 端到端实时语音大模型配置 */}
+        <TabsContent value="realtime" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Wifi className="h-5 w-5" />
+                端到端实时语音大模型配置
+              </CardTitle>
+              <CardDescription>
+                配置火山引擎端到端实时语音大模型服务，支持语音到语音的直接对话
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <ExternalLinkButton 
+                title="查看端到端语音大模型文档"
+                description="了解如何配置和使用端到端实时语音大模型API"
+                url="https://www.volcengine.com/docs/6561/1594356"
+              />
+
+              <div className="grid gap-4">
+                <ConfigField
+                  label="App ID"
+                  description="语音大模型应用的唯一标识符"
+                  placeholder="输入端到端语音 App ID"
+                  value={config.realtimeVoice.appId || ""}
+                  onChange={bindKey("realtimeVoice.appId")}
+                  copyable
+                />
+
+                <ConfigField
+                  label="Access Key"
+                  description="访问密钥，用于身份验证"
+                  placeholder="输入 Access Key"
+                  value={config.realtimeVoice.accessKey || ""}
+                  onChange={bindKey("realtimeVoice.accessKey")}
+                  type="password"
+                  copyable
+                />
+
+                <div className="grid grid-cols-2 gap-4">
+                  <ConfigField
+                    label="Resource ID"
+                    description="资源标识符"
+                    placeholder="volc.speech.dialog"
+                    value={config.realtimeVoice.resourceId || ""}
+                    onChange={bindKey("realtimeVoice.resourceId")}
+                    disabled
+                  />
+
+                  <ConfigField
+                    label="App Key"
+                    description="应用密钥"
+                    placeholder="PlgvMymc7f3tQnJ6"
+                    value={config.realtimeVoice.appKey || ""}
+                    onChange={bindKey("realtimeVoice.appKey")}
+                    disabled
+                  />
+                </div>
+
+                <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>
+                  <CollapsibleTrigger asChild>
+                    <Button variant="outline" className="w-full">
+                      <Settings className="mr-2 h-4 w-4" />
+                      高级设置
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-4 pt-4">
+                    <ConfigField
+                      label="连接ID"
+                      description="可选的连接追踪标识，用于问题排查"
+                      placeholder="自动生成 UUID"
+                      value={config.realtimeVoice.connectId || ""}
+                      onChange={bindKey("realtimeVoice.connectId")}
+                    />
+
+                    <ConfigField
+                      label="机器人名称"
+                      description="AI助手的显示名称"
+                      placeholder="豆包"
+                      value={config.realtimeVoice.session.botName || ""}
+                      onChange={bindKey("realtimeVoice.session.botName")}
+                    />
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <Label>严格审核</Label>
+                        <p className="text-xs text-gray-600">开启后会进行更严格的内容审核</p>
+                      </div>
+                      <Switch
+                        checked={config.realtimeVoice.session.strictAudit}
+                        onCheckedChange={(checked) => setConfig({
+                          ...config,
+                          realtimeVoice: {
+                            ...config.realtimeVoice,
+                            session: {
+                              ...config.realtimeVoice.session,
+                              strictAudit: checked
+                            }
+                          }
+                        })}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>TTS输出格式</Label>
+                      <Select
+                        value={config.realtimeVoice.session.ttsFormat}
+                        onValueChange={(value: "ogg_opus" | "pcm") => setConfig({
+                          ...config,
+                          realtimeVoice: {
+                            ...config.realtimeVoice,
+                            session: {
+                              ...config.realtimeVoice.session,
+                              ttsFormat: value
+                            }
+                          }
+                        })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ogg_opus">OGG Opus (推荐)</SelectItem>
+                          <SelectItem value="pcm">PCM</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {config.realtimeVoice.session.ttsFormat === "pcm" && (
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>采样率</Label>
+                          <Select
+                            value={config.realtimeVoice.session.pcmConfig.sampleRate?.toString() || "24000"}
+                            onValueChange={(value) => setConfig({
+                              ...config,
+                              realtimeVoice: {
+                                ...config.realtimeVoice,
+                                session: {
+                                  ...config.realtimeVoice.session,
+                                  pcmConfig: {
+                                    channel: config.realtimeVoice.session.pcmConfig.channel,
+                                    sampleRate: parseInt(value)
+                                  }
+                                }
+                              }
+                            })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="16000">16000 Hz</SelectItem>
+                              <SelectItem value="24000">24000 Hz</SelectItem>
+                              <SelectItem value="48000">48000 Hz</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>声道数</Label>
+                          <Select
+                            value={config.realtimeVoice.session.pcmConfig.channel?.toString() || "1"}
+                            onValueChange={(value) => setConfig({
+                              ...config,
+                              realtimeVoice: {
+                                ...config.realtimeVoice,
+                                session: {
+                                  ...config.realtimeVoice.session,
+                                  pcmConfig: {
+                                    sampleRate: config.realtimeVoice.session.pcmConfig.sampleRate,
+                                    channel: parseInt(value)
+                                  }
+                                }
+                              }
+                            })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="1">单声道</SelectItem>
+                              <SelectItem value="2">立体声</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    )}
+                  </CollapsibleContent>
+                </Collapsible>
+
+                <Alert>
+                  <HelpCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    端到端实时语音大模型需要在火山引擎控制台申请开通，并获取相应的App ID和Access Key。
+                  </AlertDescription>
+                </Alert>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         {/* RTC 配置 */}
         <TabsContent value="rtc" className="space-y-4">

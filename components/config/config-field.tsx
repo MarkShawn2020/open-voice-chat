@@ -13,7 +13,8 @@ export const ConfigField: React.FC<{
   onChange: (value: string) => void
   type?: "text" | "password"
   copyable?: boolean
-}> = ({ label, description, placeholder, value, onChange, type = "text", copyable = false }) => {
+  disabled?: boolean
+}> = ({ label, description, placeholder, value, onChange, type = "text", copyable = false, disabled = false }) => {
   const [showPassword, setShowPassword] = useState(false)
   const [copied, setCopied] = useState(false)
 
@@ -47,6 +48,7 @@ export const ConfigField: React.FC<{
           value={value}
           onChange={(e) => onChange(e.target.value)}
           className="pr-10"
+          disabled={disabled}
         />
         {copyable && value && (
           <Button

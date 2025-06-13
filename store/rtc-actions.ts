@@ -189,13 +189,13 @@ export const rtcActionsAtom = atom(null, (get: Getter, set: Setter, action: RTCA
           welcomeMessage: action.welcomeMessage,
         })
           .then((result) => {
-            if (result.success && result.data) {
-              console.log("启动 AI 语音聊天成功:", result.data)
+            if (result.success && result.taskId) {
+              console.log("启动 AI 语音聊天成功:", result.taskId)
               set(voiceChatStateAtom, (prev) => ({
                 ...prev,
                 isAgentActive: true,
-                taskId: result.data.taskId,
-                agentUserId: `${AGENT_PREFIX}${result.data.taskId}`,
+                taskId: result.taskId || null,
+                agentUserId: `${AGENT_PREFIX}${result.taskId}`,
                 isStarting: false,
                 error: null,
               }))
@@ -229,7 +229,7 @@ export const rtcActionsAtom = atom(null, (get: Getter, set: Setter, action: RTCA
           error: null,
         }))
 
-        stopVoiceChat(voiceChatState.taskId)
+        stopVoiceChat(config.rtc.appId, config.rtc.roomId, voiceChatState.taskId)
           .then((result) => {
             if (result.success) {
               console.log("停止 AI 语音聊天成功")
