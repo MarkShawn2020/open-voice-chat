@@ -3,6 +3,7 @@ import { RealtimeVoiceClient, ServerEventType } from "@/lib/realtime-voice-servi
 import { appConfigAtom } from "@/store/app-config"
 import { atom } from "jotai"
 import { atomWithStorage } from "jotai/utils"
+import { createRealtimeVoiceClient } from "@/lib/realtime-voice-service"
 
 export interface RealtimeVoiceMessage {
   id: string
@@ -115,9 +116,6 @@ export const realtimeVoiceActionsAtom = atom(
             error: null
           })
 
-          // 动态导入客户端
-          const { createRealtimeVoiceClient } = await import("@/lib/realtime-voice-service")
-          
           const client = createRealtimeVoiceClient({
             appId: config.realtimeVoice.appId,
             accessKey: config.realtimeVoice.accessKey,
@@ -127,7 +125,11 @@ export const realtimeVoiceActionsAtom = atom(
           })
 
           // 注册事件处理器
-          setupEventHandlers(client, get, set)
+          setupEventHandlers(
+            client, 
+            () => get(realtimeVoiceStateAtom),
+            (updater) => set(realtimeVoiceStateAtom, updater)
+          )
 
           // 连接
           await client.connect()
@@ -347,8 +349,8 @@ export const realtimeVoiceActionsAtom = atom(
 // 设置事件处理器
 function setupEventHandlers(
   client: RealtimeVoiceClient,
-  get: any,
-  set: any
+  get: () => RealtimeVoiceState,
+  set: (update: (prev: RealtimeVoiceState) => RealtimeVoiceState) => void
 ) {
   // 连接事件
   client.on(ServerEventType.CONNECTION_STARTED, () => {
@@ -357,13 +359,12 @@ function setupEventHandlers(
 
   client.on(ServerEventType.CONNECTION_FAILED, (data) => {
     console.error("端到端语音服务连接失败:", data)
-    const state = get()
-    set({
+    set((state) => ({
       ...state,
       isConnected: false,
       isConnecting: false,
       error: data.error || "连接失败"
-    })
+    }))
   })
 
   // 会话事件
@@ -373,13 +374,12 @@ function setupEventHandlers(
 
   client.on(ServerEventType.SESSION_FAILED, (data) => {
     console.error("会话启动失败:", data)
-    const state = get()
-    set({
+    set((state) => ({
       ...state,
       isSessionActive: false,
       isStartingSession: false,
       error: data.error || "会话启动失败"
-    })
+    }))
   })
 
   // ASR 事件
@@ -390,28 +390,29 @@ function setupEventHandlers(
   client.on(ServerEventType.ASR_RESPONSE, (data) => {
     if (data.results && data.results.length > 0) {
       const result = data.results[0]
-      const state = get()
       
-      set({
+      set((state) => ({
         ...state,
         userTranscript: result.text
-      })
+      }))
 
       // 如果是最终结果，添加到消息列表
       if (!result.is_interim) {
-        const messageId = `${state.sessionId}-user-${Date.now()}`
-        const userMessage: RealtimeVoiceMessage = {
-          id: messageId,
-          role: "user",
-          content: result.text,
-          timestamp: Date.now(),
-          isInterim: false
-        }
+        set((state) => {
+          const messageId = `${state.sessionId}-user-${Date.now()}`
+          const userMessage: RealtimeVoiceMessage = {
+            id: messageId,
+            role: "user",
+            content: result.text,
+            timestamp: Date.now(),
+            isInterim: false
+          }
 
-        set({
-          ...state,
-          messages: [...state.messages, userMessage],
-          userTranscript: ""
+          return {
+            ...state,
+            messages: [...state.messages, userMessage],
+            userTranscript: ""
+          }
         })
       }
     }
@@ -424,13 +425,12 @@ function setupEventHandlers(
   // TTS 事件
   client.on(ServerEventType.TTS_SENTENCE_START, (data) => {
     console.log("TTS开始:", data)
-    const state = get()
-    set({
+    set((state) => ({
       ...state,
       isThinking: false,
       isSpeaking: true,
       assistantText: data.text || ""
-    })
+    }))
   })
 
   client.on(ServerEventType.TTS_RESPONSE, (audioData) => {
@@ -438,11 +438,10 @@ function setupEventHandlers(
     const blob = new Blob([audioData], { type: 'audio/ogg' })
     const audioUrl = URL.createObjectURL(blob)
     
-    const state = get()
-    set({
+    set((state) => ({
       ...state,
       currentAudioUrl: audioUrl
-    })
+    }))
   })
 
   client.on(ServerEventType.TTS_SENTENCE_END, () => {
@@ -451,61 +450,59 @@ function setupEventHandlers(
 
   client.on(ServerEventType.TTS_ENDED, () => {
     console.log("TTS结束")
-    const state = get()
     
-    // 如果有文本内容，添加到消息列表
-    if (state.assistantText) {
-      const messageId = `${state.sessionId}-assistant-${Date.now()}`
-      const assistantMessage: RealtimeVoiceMessage = {
-        id: messageId,
-        role: "assistant",
-        content: state.assistantText,
-        timestamp: Date.now(),
-        isInterim: false,
-        audioUrl: state.currentAudioUrl || undefined
-      }
+    set((state) => {
+      // 如果有文本内容，添加到消息列表
+      if (state.assistantText) {
+        const messageId = `${state.sessionId}-assistant-${Date.now()}`
+        const assistantMessage: RealtimeVoiceMessage = {
+          id: messageId,
+          role: "assistant",
+          content: state.assistantText,
+          timestamp: Date.now(),
+          isInterim: false,
+          audioUrl: state.currentAudioUrl || undefined
+        }
 
-      set({
-        ...state,
-        messages: [...state.messages, assistantMessage],
-        isSpeaking: false,
-        assistantText: ""
-      })
-    } else {
-      set({
-        ...state,
-        isSpeaking: false
-      })
-    }
+        return {
+          ...state,
+          messages: [...state.messages, assistantMessage],
+          isSpeaking: false,
+          assistantText: ""
+        }
+      } else {
+        return {
+          ...state,
+          isSpeaking: false
+        }
+      }
+    })
   })
 
   // Chat 事件
   client.on(ServerEventType.CHAT_RESPONSE, (data) => {
     console.log("收到AI回复:", data)
-    const state = get()
-    set({
+    set((state) => ({
       ...state,
       isThinking: true,
       assistantText: data.content || ""
-    })
+    }))
   })
 
   client.on(ServerEventType.CHAT_ENDED, () => {
     console.log("AI回复结束")
-    const state = get()
-    set({
+    set((state) => ({
       ...state,
       isThinking: false
-    })
+    }))
   })
 
   // 错误处理
   client.onError((error) => {
     console.error("端到端语音服务错误:", error)
-    const state = get()
-    set({
+    set((state) => ({
       ...state,
       error: error.message
-    })
+    }))
   })
 }

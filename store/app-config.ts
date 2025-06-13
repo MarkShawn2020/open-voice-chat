@@ -1,5 +1,5 @@
 // 应用配置 - 包含所有服务的配置
-import { atomWithStorage,createJSONStorage } from "jotai/utils"
+import { atomWithStorage, createJSONStorage } from "jotai/utils"
 
 export interface AppConfig {
   // 语音方案选择
@@ -102,9 +102,9 @@ export const defaultAppConfig: AppConfig = {
       ttsFormat: "ogg_opus",
       pcmConfig: {
         channel: 1,
-        sampleRate: 24000
-      }
-    }
+        sampleRate: 24000,
+      },
+    },
   },
 }
 // 初始状态
@@ -112,12 +112,13 @@ const defaultStorageMechanism = createJSONStorage<AppConfig>()
 const storageMechanism = {
   ...defaultStorageMechanism,
   getItem(key: string, initialValue: unknown): AppConfig {
+    if (typeof window === "undefined") return initialValue as AppConfig
     try {
       const storedValue = localStorage.getItem(key)
-      if(key === 'appConfig') {
+      if (key === "appConfig") {
         const value = JSON.parse(storedValue ?? "") as AppConfig
         // migrate old rtc config to new voiceMode and realtimeVoice
-        if(value.rtc && !value.voiceMode) {
+        if (value.rtc && !value.voiceMode) {
           value.voiceMode = "realtime"
           value.realtimeVoice = {
             appId: value.rtc.appId,
@@ -130,21 +131,21 @@ const storageMechanism = {
               ttsFormat: "ogg_opus",
               pcmConfig: {
                 channel: 1,
-                sampleRate: 24000
-              }
-            }
+                sampleRate: 24000,
+              },
+            },
           }
-          localStorage.setItem(key, JSON.stringify(value));
+          localStorage.setItem(key, JSON.stringify(value))
         }
-          return value
+        return value
       }
       return JSON.parse(storedValue ?? "") as AppConfig
-    }
-    catch (error) {
+    } catch (error) {
       console.error(`Error getting item from storage for key "${key}":`, error)
       return initialValue as AppConfig
     }
   },
 }
-export const appConfigAtom = atomWithStorage<AppConfig>(
-  "appConfig", defaultAppConfig, storageMechanism, { getOnInit: true })
+export const appConfigAtom = atomWithStorage<AppConfig>("appConfig", defaultAppConfig, storageMechanism, {
+  getOnInit: true,
+})

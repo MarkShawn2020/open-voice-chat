@@ -1,6 +1,7 @@
 "use client"
 
 import { ChatHistory } from "@/components/chat/chat-history"
+import { UnifiedVoiceCall } from "@/components/unified-voice-call"
 import { DebugMonitor } from "@/components/debug-monitor"
 import { ErrorDiagnostics } from "@/components/error-diagnostics"
 import { ModuleTester } from "@/components/module-tester"
@@ -76,7 +77,7 @@ export const EnhancedPlayground: React.FC = () => {
   // 调试状态
   const [_testResults, _setTestResults] = useState<TestResult[]>([])
   const [_debugLogs, _setDebugLogs] = useState<string[]>([])
-  const [activeTab, setActiveTab] = useState("control")
+  const [activeTab, setActiveTab] = useState("voice")
   const [showFullConfig, setShowFullConfig] = useState(false)
 
   // 快速配置预设
@@ -521,10 +522,14 @@ export const EnhancedPlayground: React.FC = () => {
           {/* 左侧边栏 - 配置和控制 */}
           <div className="w-80 flex-shrink-0 overflow-y-auto">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="voice" className="flex items-center gap-1">
+                  <Bot className="h-3 w-3" />
+                  <span className="hidden sm:inline">语音</span>
+                </TabsTrigger>
                 <TabsTrigger value="control" className="flex items-center gap-1">
                   <Bot className="h-3 w-3" />
-                  <span className="hidden sm:inline">AI控制</span>
+                  <span className="hidden sm:inline">控制</span>
                 </TabsTrigger>
                 <TabsTrigger value="config" className="flex items-center gap-1">
                   <Settings className="h-3 w-3" />
@@ -537,6 +542,20 @@ export const EnhancedPlayground: React.FC = () => {
               </TabsList>
 
               <div className="mt-4 space-y-4">
+                <TabsContent value="voice" className="mt-0">
+                  <div className="rounded border bg-white p-4">
+                    <h3 className="text-lg font-semibold mb-4">统一语音通话</h3>
+                    <p className="text-sm text-gray-600 mb-4">
+                      集成了端到端实时语音大模型和传统RTC方案的统一界面
+                    </p>
+                    <div className="text-center">
+                      <p className="text-xs text-gray-500">
+                        请切换到主内容区域查看完整界面
+                      </p>
+                    </div>
+                  </div>
+                </TabsContent>
+
                 <TabsContent value="control" className="mt-0 space-y-4">
                   <AIControlPanel
                     aiConfig={aiConfig}
@@ -570,20 +589,26 @@ export const EnhancedPlayground: React.FC = () => {
 
           {/* 主要内容区域 */}
           <div className="flex flex-1 gap-4">
-            <ChatHistory />
+            {activeTab === "voice" ? (
+              <UnifiedVoiceCall />
+            ) : (
+              <>
+                <ChatHistory />
 
-            {/* 右侧监控面板 */}
-            <div className="w-80 flex-shrink-0">
-              <div className="h-full space-y-4">
-                <DebugMonitor />
+                {/* 右侧监控面板 */}
+                <div className="w-80 flex-shrink-0">
+                  <div className="h-full space-y-4">
+                    <DebugMonitor />
 
-                <PersonDetectionCard 
-                  detectionResult={detectionResult}
-                  systemState={systemState}
-                  eventLogs={eventLogs}
-                />
-              </div>
-            </div>
+                    <PersonDetectionCard 
+                      detectionResult={detectionResult}
+                      systemState={systemState}
+                      eventLogs={eventLogs}
+                    />
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>

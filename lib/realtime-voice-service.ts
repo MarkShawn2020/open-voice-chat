@@ -117,15 +117,23 @@ export class RealtimeVoiceClient {
       throw new Error('WebSocket connection already exists')
     }
 
-    const url = 'wss://openspeech.bytedance.com/api/v3/realtime/dialogue'
-    
-    const headers = {
+    // 验证必要的配置
+    if (!this.config.appId || !this.config.accessKey) {
+      throw new Error('App ID and Access Key are required for connection')
+    }
+
+    // 构建包含认证参数的URL
+    const baseUrl = 'wss://openspeech.bytedance.com/api/v3/realtime/dialogue'
+    const params = new URLSearchParams({
       'X-Api-App-ID': this.config.appId,
       'X-Api-Access-Key': this.config.accessKey,
       'X-Api-Resource-Id': this.config.resourceId,
       'X-Api-App-Key': this.config.appKey,
       'X-Api-Connect-Id': this.connectId
-    }
+    })
+    const url = `${baseUrl}?${params.toString()}`
+    
+    console.log('Connecting to:', url)
 
     return new Promise((resolve, reject) => {
       try {
@@ -156,7 +164,7 @@ export class RealtimeVoiceClient {
 
         this.ws.onerror = (error) => {
           console.error('WebSocket error:', error)
-          this.notifyError(new Error('WebSocket connection error'))
+          this.notifyError(new Error('WebSocket error'))
           reject(error)
         }
 

@@ -449,7 +449,26 @@ const RealtimeVoiceMode: React.FC = () => {
       {realtimeState.error && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{realtimeState.error}</AlertDescription>
+          <AlertDescription>
+            {realtimeState.error}
+            {realtimeState.error.includes('App ID and Access Key') && (
+              <div className="mt-2 text-xs">
+                请在配置页面填写正确的App ID和Access Key
+              </div>
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* 配置缺失提示 */}
+      {(!appConfig.realtimeVoice.appId || !appConfig.realtimeVoice.accessKey) && (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            端到端语音服务需要配置App ID和Access Key。
+            <br />
+            请前往<strong>配置</strong>页面的<strong>端到端语音</strong>标签进行设置。
+          </AlertDescription>
         </Alert>
       )}
     </div>
