@@ -1,12 +1,15 @@
 "use server"
 
+import { signHeader } from "@/server/utils/sign-header"
 import { AGENT_PREFIX } from "@/constants"
+import { RequestObj } from "@volcengine/openapi/lib/base/types"
 import { v4 as uuidv4 } from "uuid"
-import { Signer } from "@volcengine/openapi"
 
 // Volcengine API 配置
 const VOLCENGINE_API_BASE = "https://rtc.volcengineapi.com"
+
 const API_VERSION = "2024-12-01"
+
 
 // 启动智能体的配置接口
 interface StartVoiceChatConfig {
@@ -60,14 +63,8 @@ async function createAuthHeaders(
   version: string,
   body: Record<string, unknown>
 ): Promise<Record<string, string>> {
-  const accessKey = process.env.VOLCENGINE_ACCESS_KEY
-  const secretKey = process.env.VOLCENGINE_SECRET_KEY
 
-  if (!accessKey || !secretKey) {
-    throw new Error("Missing VOLCENGINE_ACCESS_KEY or VOLCENGINE_SECRET_KEY")
-  }
-
-  const openApiRequestData = {
+  const openApiRequestData: RequestObj = {
     region: "cn-north-1",
     method: "POST",
     params: {
@@ -81,11 +78,7 @@ async function createAuthHeaders(
     body,
   }
 
-  const signer = new Signer(openApiRequestData, "rtc")
-  signer.addAuthorization({
-    accessKeyId: accessKey,
-    secretKey: secretKey,
-  })
+  signHeader(openApiRequestData)
 
   return openApiRequestData.headers
 }

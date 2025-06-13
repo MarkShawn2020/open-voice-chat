@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { AGENT_PREFIX } from "@/constants"
-import { stopVoiceChat } from "@/lib/voice-chat-actions"
+import { stopVoiceChat } from "@/server/actions/voice-chat-actions"
 import { AGENT_BRIEF } from "@/store/message-parser"
 
 import { rtcActionsAtom } from "@/store/rtc-actions"

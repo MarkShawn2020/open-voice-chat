@@ -3,7 +3,7 @@
  * 通过Server Action调用以解决CORS问题
  */
 
-import { generateTTSSpeech } from './tts-server-action'
+import { generateTTSSpeech } from '@/server/actions/tts-server-action'
 
 export interface TTSConfig {
   appId: string
